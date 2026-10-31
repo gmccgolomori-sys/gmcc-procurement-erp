@@ -68,10 +68,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ users, onLoginSuccess 
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-white">
       {/* Top Corporate Landing Header */}
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-30 px-4 md:px-8 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-sky-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 ring-1 ring-white/20 font-black tracking-tight text-lg">
-            GMCC
-          </div>
+        <div className="flex items-center gap-3.5">
+          <img 
+            src={`${import.meta.env.BASE_URL}assets/aistudio/GMCC___Logo_Primer___Putih_8d762ffb.png`}
+            alt="GMCC - GOLO MORI CONVENTION CENTER Logo" 
+            className="h-10 sm:h-12 w-auto object-contain shrink-0" 
+          />
           <div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-sm md:text-base tracking-tight text-white uppercase">

@@ -371,8 +371,12 @@ export const OfficialPoModal: React.FC<OfficialPoModalProps> = ({ po, onClose })
           <div className="border-b-2 border-slate-900 pb-3">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg bg-slate-900 text-white flex items-center justify-center font-black text-xl tracking-tighter shrink-0 shadow-sm">
-                  GMCC
+                <div className="w-12 h-12 rounded-lg bg-slate-900 text-white flex items-center justify-center p-1.5 shrink-0 shadow-sm">
+                  <img 
+                    src={`${import.meta.env.BASE_URL}assets/aistudio/GMCC___Logo_Primer___Putih_8d762ffb.png`}
+                    alt="GMCC Logo" 
+                    className="max-h-full max-w-full object-contain" 
+                  />
                 </div>
                 <div>
                   <h1 className="text-sm md:text-base font-black text-slate-900 tracking-tight uppercase leading-none">

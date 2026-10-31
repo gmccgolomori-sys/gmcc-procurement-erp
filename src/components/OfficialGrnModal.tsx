@@ -69,8 +69,12 @@ export const OfficialGrnModal: React.FC<OfficialGrnModalProps> = ({ grn, onClose
           <div className="border-b-2 border-slate-900 pb-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-xl shrink-0">
-                  GMCC
+                <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center p-1.5 shrink-0 shadow-sm">
+                  <img 
+                    src={`${import.meta.env.BASE_URL}assets/aistudio/GMCC___Logo_Primer___Putih_8d762ffb.png`}
+                    alt="GMCC Logo" 
+                    className="max-h-full max-w-full object-contain" 
+                  />
                 </div>
                 <div>
                   <h1 className="text-base font-black text-slate-900 uppercase">
