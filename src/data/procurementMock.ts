@@ -103,7 +103,7 @@ export const INITIAL_USERS: UserAccount[] = [
   {
     id: 'u-8',
     username: 'nuka_op',
-    name: 'Stefanus Gaku (Restoran Nuka)',
+    name: 'Stefanus Gaku (NUKA BEACH CLUB)',
     role: 'NUKA_OP',
     department: 'Food & Beverage',
     password: 'nuka123',
@@ -115,7 +115,7 @@ export const INITIAL_USERS: UserAccount[] = [
 
 // Master Departemen (Separate from Cost Center)
 export const INITIAL_DEPARTMENTS: Department[] = [
-  { id: 'dept-1', name: 'Food & Beverage Department', headOfDepartment: 'Laurentius Bram', description: 'Divisi operasional F&B, Culinary Kitchen, dan Restoran Nuka' },
+  { id: 'dept-1', name: 'Food & Beverage Department', headOfDepartment: 'Laurentius Bram', description: 'Divisi operasional F&B, Culinary Kitchen, dan NUKA BEACH CLUB' },
   { id: 'dept-2', name: 'MICE & Event Operations', headOfDepartment: 'Melania Sari', description: 'Operasional konvensi, ballroom, ruang konferensi KTT & pameran' },
   { id: 'dept-3', name: 'Housekeeping & Facilities', headOfDepartment: 'Fransiskus Tobi', description: 'Kebersihan, sanitasi, dan fasilitas publik Kawasan GOLO MORI CONVENTION CENTER' },
   { id: 'dept-4', name: 'Engineering, Utilities & MEP', headOfDepartment: 'Arif Wahyudi', description: 'Pemeliharaan genset, pendingin, listrik, air & kelistrikan gedung' },
@@ -127,7 +127,7 @@ export const INITIAL_DEPARTMENTS: Department[] = [
 // Master Cost Center (Separate entity with code, name, and budget allocation)
 export const INITIAL_COST_CENTERS: CostCenter[] = [
   { id: 'cc-1', code: 'CC-FB-01', name: 'F&B Culinary Central Kitchen', departmentName: 'Food & Beverage Department', budgetAllocation: 350000000, headOfDepartment: 'Ignatius Riky' },
-  { id: 'cc-2', code: 'CC-FB-02', name: 'Restoran Nuka Beach & Bar', departmentName: 'Food & Beverage Department', budgetAllocation: 250000000, headOfDepartment: 'Stefanus Gaku' },
+  { id: 'cc-2', code: 'CC-FB-02', name: 'NUKA BEACH CLUB', departmentName: 'Food & Beverage Department', budgetAllocation: 250000000, headOfDepartment: 'Stefanus Gaku' },
   { id: 'cc-3', code: 'CC-MICE-01', name: 'MICE Convention & Banquet Events', departmentName: 'MICE & Event Operations', budgetAllocation: 500000000, headOfDepartment: 'Melania Sari' },
   { id: 'cc-4', code: 'CC-HK-01', name: 'Housekeeping Public Areas & Linen', departmentName: 'Housekeeping & Facilities', budgetAllocation: 120000000, headOfDepartment: 'Fransiskus Tobi' },
   { id: 'cc-5', code: 'CC-ENG-01', name: 'Engineering, Utilities & MEP Hub', departmentName: 'Engineering, Utilities & MEP', budgetAllocation: 280000000, headOfDepartment: 'Arif Wahyudi' },
@@ -366,15 +366,15 @@ export const INITIAL_PURCHASE_REQUISITIONS: PurchaseRequisition[] = [
     requestDate: '2026-10-26',
     requiredDate: '2026-10-30',
     requesterId: 'u-8',
-    requesterName: 'Stefanus Gaku (Restoran Nuka)',
+    requesterName: 'Stefanus Gaku (NUKA BEACH CLUB)',
     department: 'Food & Beverage Department',
     costCenterCode: 'CC-FB-02',
-    costCenterName: 'Restoran Nuka Beach & Bar',
+    costCenterName: 'NUKA BEACH CLUB',
     costControlCode: 'CC-FB-02',
-    costControlReview: 'Cost Center Restoran Nuka terverifikasi.',
+    costControlReview: 'Cost Center NUKA BEACH CLUB terverifikasi.',
     suggestedVendorId: 'ven-2',
     suggestedVendorName: 'CV Komodo Bahari Sejahtera',
-    purpose: 'Kebutuhan Seafood Segar Ikan Salmon Fillet untuk Restoran Nuka & Bar',
+    purpose: 'Kebutuhan Seafood Segar Ikan Salmon Fillet untuk NUKA BEACH CLUB',
     items: [
       {
         id: 'pri-3',
@@ -385,9 +385,9 @@ export const INITIAL_PURCHASE_REQUISITIONS: PurchaseRequisition[] = [
         quantityRequested: 20,
         estimatedPrice: 340000,
         totalEstimated: 6800000,
-        costCenterName: 'Restoran Nuka Beach & Bar',
+        costCenterName: 'NUKA BEACH CLUB',
         costControlCode: 'CC-FB-02',
-        costControlNotes: 'Alokasi A La Carte Nuka',
+        costControlNotes: 'Alokasi A La Carte NUKA BEACH CLUB',
         notes: 'Kualitas Sashimi Grade'
       }
     ],
@@ -580,7 +580,7 @@ export const INITIAL_FOOD_FLASH: FoodFlashRecord[] = [
     combinedFoodCost: 18937000,
     combinedFoodCostPercentage: 29.0,
     targetFoodCostPercentage: 32.0,
-    notes: 'Gala Dinner Delegasi + Makan Siang Reguler Nuka Restaurant'
+    notes: 'Gala Dinner Delegasi + Makan Siang Reguler NUKA BEACH CLUB'
   },
   {
     id: 'ff-2026-10-26',
@@ -595,7 +595,7 @@ export const INITIAL_FOOD_FLASH: FoodFlashRecord[] = [
     combinedFoodCost: 13860000,
     combinedFoodCostPercentage: 30.0,
     targetFoodCostPercentage: 32.0,
-    notes: 'Coffee break delegasi & Dinner buffet Nuka'
+    notes: 'Coffee break delegasi & Dinner buffet NUKA BEACH CLUB'
   },
   {
     id: 'ff-2026-10-25',
@@ -652,13 +652,13 @@ export const INITIAL_RECIPES: RecipeCostRecord[] = [
     recipeCode: 'RCP-FB-001',
     recipeName: 'Nuka Wagyu Tenderloin Steak 200g',
     category: 'A LA CARTE',
-    costCenterName: 'Restoran Nuka Beach & Bar',
+    costCenterName: 'NUKA BEACH CLUB',
     outlet: 'NUKA',
     portionYield: 1,
     sellingPrice: 225000,
     targetFoodCostPercent: 30,
     status: 'EXCELLENT',
-    notes: 'Menu andalan Restoran Nuka, disajikan dengan saus truffle red wine jus dan sayuran organik Ruteng.',
+    notes: 'Menu andalan NUKA BEACH CLUB, disajikan dengan saus truffle red wine jus dan sayuran organik Ruteng.',
     chefNotes: 'Potongan tenderloin tepat 200 gram, simpan suhu -2°C sebelum di-grill medium rare.',
     lastUpdated: '2026-10-28',
     ingredients: [
@@ -704,7 +704,7 @@ export const INITIAL_RECIPES: RecipeCostRecord[] = [
     recipeCode: 'RCP-FB-002',
     recipeName: 'Flores Grilled Salmon Fillet with Herb Butter',
     category: 'A LA CARTE',
-    costCenterName: 'Restoran Nuka Beach & Bar',
+    costCenterName: 'NUKA BEACH CLUB',
     outlet: 'NUKA',
     portionYield: 1,
     sellingPrice: 235000,
@@ -808,7 +808,7 @@ export const INITIAL_RECIPES: RecipeCostRecord[] = [
     recipeCode: 'RCP-FB-003',
     recipeName: 'Nasi Goreng Komodo Nuka Spesial',
     category: 'A LA CARTE',
-    costCenterName: 'Restoran Nuka Beach & Bar',
+    costCenterName: 'NUKA BEACH CLUB',
     outlet: 'NUKA',
     portionYield: 1,
     sellingPrice: 95000,

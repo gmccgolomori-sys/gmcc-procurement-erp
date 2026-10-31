@@ -536,7 +536,7 @@ export const RecipeCostCenterView: React.FC<RecipeCostCenterViewProps> = ({
             <span>Total Resep Terdaftar</span>
           </div>
           <div className="text-2xl font-black text-white font-mono">{kpiData.total}</div>
-          <div className="text-[10px] text-slate-500">Nuka Resto & MICE Banquet</div>
+          <div className="text-[10px] text-slate-500">NUKA BEACH CLUB & MICE Banquet</div>
         </div>
 
         <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-1">
@@ -599,7 +599,7 @@ export const RecipeCostCenterView: React.FC<RecipeCostCenterViewProps> = ({
                 selectedOutlet === 'NUKA' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'
               }`}
             >
-              Nuka Resto
+              NUKA BEACH CLUB
             </button>
             <button
               onClick={() => setSelectedOutlet('MICE')}
@@ -832,7 +832,7 @@ export const RecipeCostCenterView: React.FC<RecipeCostCenterViewProps> = ({
                     onChange={(e) => setOutlet(e.target.value as any)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-cyan-500"
                   >
-                    <option value="NUKA">Nuka Resto & Bar</option>
+                    <option value="NUKA">NUKA BEACH CLUB</option>
                     <option value="MICE">MICE Banquet & Convention</option>
                     <option value="ALL">Semua Outlet GMCC</option>
                   </select>

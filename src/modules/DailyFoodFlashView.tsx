@@ -229,7 +229,7 @@ export const DailyFoodFlashView: React.FC<DailyFoodFlashViewProps> = ({
         <div>
           <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
             <Utensils className="w-5 h-5 text-emerald-400" />
-            Daily Food Flash System (Terpisah: Nuka, MICE & Gabungan)
+            Daily Food Flash System (Terpisah: NUKA BEACH CLUB, MICE & Gabungan)
           </h1>
           <p className="text-xs text-slate-400">
             Biaya bahan makanan diambil otomatis dari data Goods Receiving yang disetujui, omset diinput secara manual
@@ -254,7 +254,7 @@ export const DailyFoodFlashView: React.FC<DailyFoodFlashViewProps> = ({
         </div>
       </div>
 
-      {/* 3 SEGMENT SELECTOR: NUKA, MICE, GABUNGAN */}
+      {/* 3 SEGMENT SELECTOR: NUKA BEACH CLUB, MICE, GABUNGAN */}
       <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
         <button
           onClick={() => setActiveSegment('GABUNGAN')}
@@ -277,7 +277,7 @@ export const DailyFoodFlashView: React.FC<DailyFoodFlashViewProps> = ({
           }`}
         >
           <Utensils className="w-4 h-4" />
-          <span>Restoran Nuka & Bar</span>
+          <span>NUKA BEACH CLUB</span>
         </button>
 
         <button
@@ -298,7 +298,7 @@ export const DailyFoodFlashView: React.FC<DailyFoodFlashViewProps> = ({
         {/* Revenue Card */}
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-1">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            {activeSegment === 'GABUNGAN' ? 'Total Revenue MTD (Gabungan)' : activeSegment === 'NUKA' ? 'Total Revenue MTD (Restoran Nuka)' : 'Total Revenue MTD (MICE Banquet)'}
+            {activeSegment === 'GABUNGAN' ? 'Total Revenue MTD (Gabungan)' : activeSegment === 'NUKA' ? 'Total Revenue MTD (NUKA BEACH CLUB)' : 'Total Revenue MTD (MICE Banquet)'}
           </span>
           <div className="text-2xl font-black text-white font-mono">
             {formatRupiah(activeSegment === 'GABUNGAN' ? mtdCombRev : activeSegment === 'NUKA' ? mtdNukaRev : mtdMiceRev)}
@@ -309,7 +309,7 @@ export const DailyFoodFlashView: React.FC<DailyFoodFlashViewProps> = ({
         {/* Food Cost Card */}
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-1">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            {activeSegment === 'GABUNGAN' ? 'Total Food Cost (Dari Receiving)' : activeSegment === 'NUKA' ? 'Food Cost Nuka (Dari Receiving)' : 'Food Cost MICE (Dari Receiving)'}
+            {activeSegment === 'GABUNGAN' ? 'Total Food Cost (Dari Receiving)' : activeSegment === 'NUKA' ? 'Food Cost NUKA BEACH CLUB (Dari Receiving)' : 'Food Cost MICE (Dari Receiving)'}
           </span>
           <div className="text-2xl font-black text-amber-300 font-mono">
             {formatRupiah(activeSegment === 'GABUNGAN' ? mtdCombCost : activeSegment === 'NUKA' ? mtdNukaCost : mtdMiceCost)}
@@ -320,7 +320,7 @@ export const DailyFoodFlashView: React.FC<DailyFoodFlashViewProps> = ({
         {/* Cost % Ratio Card */}
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-1">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            Food Cost Ratio ({activeSegment})
+            Food Cost Ratio ({activeSegment === 'NUKA' ? 'NUKA BEACH CLUB' : activeSegment})
           </span>
           <div className="flex items-baseline gap-2">
             <span className={`text-3xl font-black font-mono ${
@@ -355,9 +355,9 @@ export const DailyFoodFlashView: React.FC<DailyFoodFlashViewProps> = ({
                 <th className="px-4 py-3">Tanggal</th>
                 {activeSegment === 'NUKA' && (
                   <>
-                    <th className="px-4 py-3">Revenue Nuka (Manual)</th>
-                    <th className="px-4 py-3">Food Cost Nuka (Receiving)</th>
-                    <th className="px-4 py-3 text-center">Cost % Nuka</th>
+                    <th className="px-4 py-3">Revenue NUKA BEACH CLUB (Manual)</th>
+                    <th className="px-4 py-3">Food Cost NUKA BEACH CLUB (Receiving)</th>
+                    <th className="px-4 py-3 text-center">Cost % NUKA BEACH CLUB</th>
                   </>
                 )}
                 {activeSegment === 'MICE' && (
@@ -369,7 +369,7 @@ export const DailyFoodFlashView: React.FC<DailyFoodFlashViewProps> = ({
                 )}
                 {activeSegment === 'GABUNGAN' && (
                   <>
-                    <th className="px-4 py-3">Revenue Nuka</th>
+                    <th className="px-4 py-3">Revenue NUKA BEACH CLUB</th>
                     <th className="px-4 py-3">Revenue MICE</th>
                     <th className="px-4 py-3">Total Revenue</th>
                     <th className="px-4 py-3">Total Cost (Receiving)</th>
@@ -563,7 +563,7 @@ export const DailyFoodFlashView: React.FC<DailyFoodFlashViewProps> = ({
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Omset Manual Restoran Nuka & Bar (IDR) *</label>
+                <label className="block font-semibold text-slate-300 mb-1">Omset Manual NUKA BEACH CLUB (IDR) *</label>
                 <input
                   type="number"
                   step="500000"

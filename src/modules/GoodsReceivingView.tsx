@@ -171,7 +171,7 @@ export const GoodsReceivingView: React.FC<GoodsReceivingViewProps> = ({
           Penerimaan Barang Gudang (Goods Receiving / GRN)
         </h1>
         <p className="text-xs text-slate-400">
-          Audit harga terbaru sesuai nota, pemeriksaan jumlah barang diterima & reject, serta alokasi outlet Nuka/MICE
+          Audit harga terbaru sesuai nota, pemeriksaan jumlah barang diterima & reject, serta alokasi outlet NUKA BEACH CLUB / MICE
         </p>
       </div>
 
@@ -472,7 +472,7 @@ export const GoodsReceivingView: React.FC<GoodsReceivingViewProps> = ({
                               onChange={(e) => handleItemAuditChange(idx, 'outletDestination', e.target.value)}
                               className="w-full px-2 py-1 rounded bg-slate-800 border border-slate-700 text-white text-[10px]"
                             >
-                              <option value="NUKA">Nuka Resto</option>
+                              <option value="NUKA">NUKA BEACH CLUB</option>
                               <option value="MICE">MICE Banquet</option>
                             </select>
                           </td>

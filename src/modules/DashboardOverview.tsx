@@ -198,7 +198,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <div>
             <h2 className="text-sm font-bold text-white flex items-center gap-2">
               <Utensils className="w-4 h-4 text-emerald-400" />
-              Daily Food Flash Dashboard (3 Tampilan: Nuka, MICE & Gabungan)
+              Daily Food Flash Dashboard (3 Tampilan: NUKA BEACH CLUB, MICE & Gabungan)
             </h2>
             <p className="text-xs text-slate-400">
               Biaya makanan otomatis diambil dari data Receiving F&B dan perbandingan rasio target 32.0%
@@ -214,11 +214,11 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* 1. RESTORAN NUKA */}
+          {/* 1. NUKA BEACH CLUB */}
           <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-3 relative overflow-hidden">
             <div className="flex items-center justify-between">
               <span className="px-2.5 py-0.5 rounded-lg bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold text-[10px] uppercase">
-                1. Restoran Nuka & Bar
+                1. NUKA BEACH CLUB
               </span>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${latestFF.nukaFoodCostPercentage <= 32 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
                 {latestFF.nukaFoodCostPercentage <= 32 ? 'Target Tercapai' : 'Over Target'}
@@ -226,7 +226,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             </div>
 
             <div>
-              <div className="text-[10px] text-slate-400 uppercase font-semibold">Revenue Restoran Nuka</div>
+              <div className="text-[10px] text-slate-400 uppercase font-semibold">Revenue NUKA BEACH CLUB</div>
               <div className="text-xl font-black text-white font-mono mt-0.5">
                 {formatRupiah(latestFF.nukaRevenue)}
               </div>
@@ -234,7 +234,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
             <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1 text-xs">
               <div className="flex justify-between text-slate-300">
-                <span>Food Cost Nuka:</span>
+                <span>Food Cost NUKA BEACH CLUB:</span>
                 <span className="font-mono font-bold text-amber-300">{formatRupiah(latestFF.nukaFoodCost)}</span>
               </div>
               <div className="flex justify-between text-slate-300">
