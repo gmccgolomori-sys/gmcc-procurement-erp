@@ -150,16 +150,25 @@ export interface RecipeCostRecord {
   portionYield?: number; // default 1 portion
   portions?: number; // alias
   ingredients: RecipeIngredient[];
-  totalRecipeCost: number; // sum of ingredients
+  rawIngredientsCost?: number; // Biaya bahan baku mentah
+  yieldLossPercent?: number; // Persentase yield / cooking / trimming loss diisi manual oleh Chef (%)
+  yieldLossAmount?: number; // Nilai kerugian shrinkage / trimming
+  effectiveRecipeCost?: number; // Biaya resep setelah yield loss
+  totalRecipeCost: number; // total biaya resep (effective)
   costPerPortion?: number; // totalRecipeCost / portionYield
   portionCost?: number; // alias
-  sellingPrice: number; // Selling Price per portion (IDR)
-  actualFoodCostPercent?: number; // (costPerPortion / sellingPrice) * 100
+  grossSellingPrice?: number; // Harga Jual Menu di POS/Buku Menu (termasuk 21% Tax & Service)
+  taxAndServiceRate?: number; // 21% standar hospitality GMCC (10% PB1 + 11% Service)
+  taxAndServiceAmount?: number; // Potongan 21%
+  baseSellingPrice?: number; // Harga Dasar setelah dikurangi 21% Tax & Service
+  sellingPrice: number; // Harga dasar acuan perhitungan food cost (IDR)
+  actualFoodCostPercent?: number; // (costPerPortion / baseSellingPrice) * 100
   foodCostPercentage?: number; // alias
   targetFoodCostPercent?: number; // standard e.g. 30%
   targetCostPercentage?: number; // alias
+  targetFoodCostAmount?: number; // baseSellingPrice * (targetFoodCostPercent / 100)
   recommendedSellingPrice?: number; // costPerPortion / (targetFoodCostPercent / 100)
-  grossProfitPerPortion?: number; // sellingPrice - costPerPortion
+  grossProfitPerPortion?: number; // baseSellingPrice - costPerPortion
   status: 'EXCELLENT' | 'HEALTHY' | 'HIGH' | 'CRITICAL' | 'WARNING' | 'ALERT';
   notes?: string;
   chefNotes?: string;
