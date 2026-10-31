@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(({ command }) => {
   return {
-    base: command === 'build' ? '/gmcc-procurement-erp/' : '/',
+    base: './',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
