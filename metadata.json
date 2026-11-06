@@ -1,0 +1,6 @@
+{
+  "name": "GMCC Purchasing & Procurement ERP System",
+  "description": "Enterprise ERP system for Purchase Requisitions, Purchasing Review, Approval Center, Purchase Orders, Goods Receiving, Invoice Matching, Master Data, Purchasing by Item Reports, and Daily Food Flash.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,850 @@
+import React, { useState } from 'react';
+import { 
+  UserAccount, 
+  Department,
+  CostCenter, 
+  ChartOfAccount,
+  Vendor, 
+  MasterItem, 
+  PurchaseRequisition, 
+  PurchaseOrder, 
+  GoodsReceipt, 
+  FoodFlashRecord,
+  AuditLog,
+  GitHubSyncConfig,
+  RecipeCostRecord,
+  PettyCashSettlementPeriod,
+  hasRestrictedModuleAccess
+} from './types/procurement';
+import { 
+  getStoredUsers, 
+  saveStoredUsers, 
+  getStoredDepartments, 
+  saveStoredDepartments, 
+  getStoredCostCenters,
+  saveStoredCostCenters, 
+  getStoredCOAs,
+  saveStoredCOAs,
+  getStoredVendors, 
+  saveStoredVendors, 
+  getStoredItems, 
+  saveStoredItems, 
+  getStoredPRs, 
+  saveStoredPRs, 
+  getStoredPOs, 
+  saveStoredPOs, 
+  getStoredGRNs, 
+  saveStoredGRNs, 
+  getStoredFoodFlash, 
+  saveStoredFoodFlash, 
+  getStoredRecipes,
+  saveStoredRecipes,
+  getStoredPettyCashPeriods,
+  saveStoredPettyCashPeriods,
+  getStoredAuditLogs, 
+  saveStoredAuditLogs, 
+  getStoredGitHubConfig, 
+  saveStoredGitHubConfig,
+  getStoredAuthUser,
+  saveStoredAuthUser,
+  resetUsersToDefault
+} from './utils/procurementStorage';
+import { Navbar } from './components/Navbar';
+import { Sidebar, ActiveTab } from './components/Sidebar';
+import { LoginScreen } from './components/LoginScreen';
+import { ChangePasswordModal } from './components/ChangePasswordModal';
+import { DashboardOverview } from './modules/DashboardOverview';
+import { RequisitionCreateView } from './modules/RequisitionCreateView';
+import { RequisitionsListView } from './modules/RequisitionsListView';
+import { ApprovalCenterView } from './modules/ApprovalCenterView';
+import { PurchaseOrdersView } from './modules/PurchaseOrdersView';
+import { GoodsReceivingView } from './modules/GoodsReceivingView';
+import { DailyFoodFlashView } from './modules/DailyFoodFlashView';
+import { RecipeCostCenterView } from './modules/RecipeCostCenterView';
+import { PettyCashSettlementView } from './modules/PettyCashSettlementView';
+import { PettyCashReconciliationView } from './modules/PettyCashReconciliationView';
+import { ApAgingView } from './modules/ApAgingView';
+import { MasterDataView } from './modules/MasterDataView';
+import { AdminView } from './modules/AdminView';
+import { GitHubRightDrawer } from './components/GitHubRightDrawer';
+import { 
+  LayoutDashboard, 
+  FileText, 
+  ShieldCheck, 
+  Package, 
+  Utensils, 
+  Github,
+  LogOut,
+  Receipt,
+  Scale,
+  ShieldAlert,
+  PlusCircle
+} from 'lucide-react';
+
+export default function App() {
+  // Main Data States
+  const [users, setUsers] = useState<UserAccount[]>(() => getStoredUsers());
+  const [departments, setDepartments] = useState<Department[]>(() => getStoredDepartments());
+  const [costCenters, setCostCenters] = useState<CostCenter[]>(() => getStoredCostCenters());
+  const [coas, setCoas] = useState<ChartOfAccount[]>(() => getStoredCOAs());
+  const [vendors, setVendors] = useState<Vendor[]>(() => getStoredVendors());
+  const [items, setItems] = useState<MasterItem[]>(() => getStoredItems());
+  const [prs, setPrs] = useState<PurchaseRequisition[]>(() => getStoredPRs());
+  const [pos, setPos] = useState<PurchaseOrder[]>(() => getStoredPOs());
+  const [grns, setGrns] = useState<GoodsReceipt[]>(() => getStoredGRNs());
+  const [foodFlash, setFoodFlash] = useState<FoodFlashRecord[]>(() => getStoredFoodFlash());
+  const [recipes, setRecipes] = useState<RecipeCostRecord[]>(() => getStoredRecipes());
+  const [pettyCashPeriods, setPettyCashPeriods] = useState<PettyCashSettlementPeriod[]>(() => getStoredPettyCashPeriods());
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => getStoredAuditLogs());
+  const [githubConfig, setGithubConfig] = useState<GitHubSyncConfig>(() => getStoredGitHubConfig());
+
+  // Current User with auto-fallback to default Admin to prevent blank/locked state after cache clear
+  const [currentUser, setCurrentUser] = useState<UserAccount>(() => {
+    const saved = getStoredAuthUser();
+    if (saved && users.some(u => u.id === saved.id)) return saved;
+    const defaultUser = users.find(u => u.username === 'admin') || users[0] || getStoredUsers()[0];
+    saveStoredAuthUser(defaultUser);
+    return defaultUser;
+  });
+
+  // Always keep user active in ERP unless explicitly logging out
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+
+  // Active navigation tab
+  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+
+  // GitHub Right-Side Slide-Over Drawer state (Strictly on the right side)
+  const [isGitHubDrawerOpen, setIsGitHubDrawerOpen] = useState(false);
+
+  // Login handler
+  const handleLoginSuccess = (user: UserAccount) => {
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+    saveStoredAuthUser(user);
+  };
+
+  // Logout handler
+  const handleLogout = () => {
+    if (confirm('Apakah Anda yakin ingin keluar dari sistem GMCC ERP?')) {
+      setIsAuthenticated(false);
+      saveStoredAuthUser(null);
+    }
+  };
+
+  // PR & PO Handlers
+  const handleSavePR = (newPR: PurchaseRequisition) => {
+    const updated = [newPR, ...prs];
+    setPrs(updated);
+    saveStoredPRs(updated);
+
+    const log: AuditLog = {
+      id: `log-${Date.now()}`,
+      timestamp: new Date().toLocaleString('id-ID', { hour12: false }) + ' WITA',
+      username: currentUser.username,
+      module: 'Requisitions',
+      action: 'CREATE_PR',
+      details: `Membuat PR ${newPR.prNumber} senilai Rp ${newPR.subtotalEstimated.toLocaleString('id-ID')}`
+    };
+    const updatedLogs = [log, ...auditLogs];
+    setAuditLogs(updatedLogs);
+    saveStoredAuditLogs(updatedLogs);
+  };
+
+  const handleUpdatePRStatus = (updatedPR: PurchaseRequisition) => {
+    const updated = prs.map(p => p.id === updatedPR.id ? updatedPR : p);
+    setPrs(updated);
+    saveStoredPRs(updated);
+
+    const log: AuditLog = {
+      id: `log-${Date.now()}`,
+      timestamp: new Date().toLocaleString('id-ID', { hour12: false }) + ' WITA',
+      username: currentUser.username,
+      module: 'Approval Center',
+      action: updatedPR.status === 'REJECTED' ? 'REJECT_PR' : 'APPROVE_PR_STAGE',
+      details: `Memperbarui status PR ${updatedPR.prNumber} menjadi ${updatedPR.status}`
+    };
+    const updatedLogs = [log, ...auditLogs];
+    setAuditLogs(updatedLogs);
+    saveStoredAuditLogs(updatedLogs);
+  };
+
+  const handleEditPR = (updatedPR: PurchaseRequisition) => {
+    const updated = prs.map(p => p.id === updatedPR.id ? updatedPR : p);
+    setPrs(updated);
+    saveStoredPRs(updated);
+
+    const log: AuditLog = {
+      id: `log-${Date.now()}`,
+      timestamp: new Date().toLocaleString('id-ID', { hour12: false }) + ' WITA',
+      username: currentUser.username,
+      module: 'Requisitions',
+      action: 'EDIT_PR',
+      details: `Menyesuaikan data PR ${updatedPR.prNumber} senilai Rp ${updatedPR.subtotalEstimated.toLocaleString('id-ID')}`
+    };
+    const updatedLogs = [log, ...auditLogs];
+    setAuditLogs(updatedLogs);
+    saveStoredAuditLogs(updatedLogs);
+  };
+
+  const handleDeletePR = (prId: string) => {
+    const targetPr = prs.find(p => p.id === prId);
+    const updated = prs.filter(p => p.id !== prId);
+    setPrs(updated);
+    saveStoredPRs(updated);
+
+    const log: AuditLog = {
+      id: `log-${Date.now()}`,
+      timestamp: new Date().toLocaleString('id-ID', { hour12: false }) + ' WITA',
+      username: currentUser.username,
+      module: 'Requisitions',
+      action: 'DELETE_PR',
+      details: `Menghapus dokumen PR ${targetPr?.prNumber || prId}`
+    };
+    const updatedLogs = [log, ...auditLogs];
+    setAuditLogs(updatedLogs);
+    saveStoredAuditLogs(updatedLogs);
+  };
+
+  const handleCreatePOFromApprovedPR = (newPO: PurchaseOrder) => {
+    const updatedPos = [newPO, ...pos];
+    setPos(updatedPos);
+    saveStoredPOs(updatedPos);
+
+    const log: AuditLog = {
+      id: `log-${Date.now()}`,
+      timestamp: new Date().toLocaleString('id-ID', { hour12: false }) + ' WITA',
+      username: currentUser.username,
+      module: 'Purchase Orders',
+      action: 'ISSUE_PO',
+      details: `Menerbitkan Surat Pesanan resmi ${newPO.poNumber} untuk ${newPO.vendorName}`
+    };
+    const updatedLogs = [log, ...auditLogs];
+    setAuditLogs(updatedLogs);
+    saveStoredAuditLogs(updatedLogs);
+  };
+
+  const handleUpdatePO = (updatedPO: PurchaseOrder) => {
+    const updated = pos.map(p => p.id === updatedPO.id ? updatedPO : p);
+    setPos(updated);
+    saveStoredPOs(updated);
+  };
+
+  const handleSaveGRN = (newGRN: GoodsReceipt, updatedPO: PurchaseOrder) => {
+    const updatedGrns = [newGRN, ...grns];
+    setGrns(updatedGrns);
+    saveStoredGRNs(updatedGrns);
+
+    const updatedPos = pos.map(p => p.id === updatedPO.id ? updatedPO : p);
+    setPos(updatedPos);
+    saveStoredPOs(updatedPos);
+
+    const log: AuditLog = {
+      id: `log-${Date.now()}`,
+      timestamp: new Date().toLocaleString('id-ID', { hour12: false }) + ' WITA',
+      username: currentUser.username,
+      module: 'Goods Receiving',
+      action: 'RECEIVE_GOODS',
+      details: `Menerbitkan GRN ${newGRN.grnNumber} untuk ${updatedPO.poNumber}`
+    };
+    const updatedLogs = [log, ...auditLogs];
+    setAuditLogs(updatedLogs);
+    saveStoredAuditLogs(updatedLogs);
+  };
+
+  const handleUpdateGRN = (updatedGRN: GoodsReceipt) => {
+    const updated = grns.map(g => g.id === updatedGRN.id ? updatedGRN : g);
+    setGrns(updated);
+    saveStoredGRNs(updated);
+  };
+
+  const handleUpdateFoodFlash = (updatedRec: FoodFlashRecord) => {
+    const updated = foodFlash.map(f => f.id === updatedRec.id ? updatedRec : f);
+    setFoodFlash(updated);
+    saveStoredFoodFlash(updated);
+  };
+
+  const handleAddFoodFlash = (newRec: FoodFlashRecord) => {
+    const updated = [newRec, ...foodFlash];
+    setFoodFlash(updated);
+    saveStoredFoodFlash(updated);
+  };
+
+  const handleAddVendor = (newVendor: Vendor) => {
+    const updated = [newVendor, ...vendors];
+    setVendors(updated);
+    saveStoredVendors(updated);
+  };
+
+  const handleEditVendor = (updatedVendor: Vendor) => {
+    const updated = vendors.map(v => v.id === updatedVendor.id ? updatedVendor : v);
+    setVendors(updated);
+    saveStoredVendors(updated);
+  };
+
+  const handleDeleteVendor = (vendorId: string) => {
+    const updated = vendors.filter(v => v.id !== vendorId);
+    setVendors(updated);
+    saveStoredVendors(updated);
+  };
+
+  const handleAddItem = (newItem: MasterItem) => {
+    const updated = [newItem, ...items];
+    setItems(updated);
+    saveStoredItems(updated);
+  };
+
+  // Department CRUD
+  const handleAddDepartment = (newDept: Department) => {
+    const updated = [...departments, newDept];
+    setDepartments(updated);
+    saveStoredDepartments(updated);
+  };
+
+  const handleEditDepartment = (updatedDept: Department) => {
+    const updated = departments.map(d => d.id === updatedDept.id ? updatedDept : d);
+    setDepartments(updated);
+    saveStoredDepartments(updated);
+  };
+
+  const handleDeleteDepartment = (deptId: string) => {
+    const updated = departments.filter(d => d.id !== deptId);
+    setDepartments(updated);
+    saveStoredDepartments(updated);
+  };
+
+  // Cost Center CRUD
+  const handleAddCostCenter = (newCc: CostCenter) => {
+    const updated = [...costCenters, newCc];
+    setCostCenters(updated);
+    saveStoredCostCenters(updated);
+  };
+
+  const handleEditCostCenter = (updatedCc: CostCenter) => {
+    const updated = costCenters.map(c => c.id === updatedCc.id ? updatedCc : c);
+    setCostCenters(updated);
+    saveStoredCostCenters(updated);
+  };
+
+  const handleDeleteCostCenter = (ccId: string) => {
+    const updated = costCenters.filter(c => c.id !== ccId);
+    setCostCenters(updated);
+    saveStoredCostCenters(updated);
+  };
+
+  // Chart of Accounts (COA) CRUD
+  const handleAddCoa = (newCoa: ChartOfAccount) => {
+    const updated = [...coas, newCoa];
+    setCoas(updated);
+    saveStoredCOAs(updated);
+  };
+
+  const handleEditCoa = (updatedCoa: ChartOfAccount) => {
+    const updated = coas.map(c => c.id === updatedCoa.id ? updatedCoa : c);
+    setCoas(updated);
+    saveStoredCOAs(updated);
+  };
+
+  const handleDeleteCoa = (coaId: string) => {
+    const updated = coas.filter(c => c.id !== coaId);
+    setCoas(updated);
+    saveStoredCOAs(updated);
+  };
+
+  // User Management CRUD
+  const handleAddUser = (newUser: UserAccount) => {
+    const updated = [...users, newUser];
+    setUsers(updated);
+    saveStoredUsers(updated);
+  };
+
+  const handleEditUser = (updatedUser: UserAccount) => {
+    const updated = users.map(u => u.id === updatedUser.id ? updatedUser : u);
+    setUsers(updated);
+    saveStoredUsers(updated);
+    if (currentUser.id === updatedUser.id) {
+      setCurrentUser(updatedUser);
+      saveStoredAuthUser(updatedUser);
+    }
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    const updated = users.filter(u => u.id !== userId);
+    setUsers(updated);
+    saveStoredUsers(updated);
+  };
+
+  // Recipe Cost Center CRUD
+  const handleAddRecipe = (newRecipe: RecipeCostRecord) => {
+    const updated = [newRecipe, ...recipes];
+    setRecipes(updated);
+    saveStoredRecipes(updated);
+  };
+
+  const handleEditRecipe = (updatedRecipe: RecipeCostRecord) => {
+    const updated = recipes.map(r => r.id === updatedRecipe.id ? updatedRecipe : r);
+    setRecipes(updated);
+    saveStoredRecipes(updated);
+  };
+
+  const handleDeleteRecipe = (recipeId: string) => {
+    const updated = recipes.filter(r => r.id !== recipeId);
+    setRecipes(updated);
+    saveStoredRecipes(updated);
+  };
+
+  // Petty Cash & Settlement CRUD
+  const handleSavePettyCashPeriod = (updatedPeriod: PettyCashSettlementPeriod) => {
+    const exists = pettyCashPeriods.some(p => p.id === updatedPeriod.id);
+    const updated = exists 
+      ? pettyCashPeriods.map(p => p.id === updatedPeriod.id ? updatedPeriod : p)
+      : [updatedPeriod, ...pettyCashPeriods];
+    setPettyCashPeriods(updated);
+    saveStoredPettyCashPeriods(updated);
+  };
+
+  const handleDeletePettyCashPeriod = (periodId: string) => {
+    if (pettyCashPeriods.length <= 1) {
+      alert('Minimal harus ada 1 periode / file kas kecil.');
+      return;
+    }
+    const updated = pettyCashPeriods.filter(p => p.id !== periodId);
+    setPettyCashPeriods(updated);
+    saveStoredPettyCashPeriods(updated);
+  };
+
+  const handleUpdateUserPassword = (userId: string, newPassword: string) => {
+    const updated = users.map(u => u.id === userId ? { ...u, password: newPassword } : u);
+    setUsers(updated);
+    saveStoredUsers(updated);
+    if (currentUser.id === userId) {
+      const updatedCurr = { ...currentUser, password: newPassword };
+      setCurrentUser(updatedCurr);
+      saveStoredAuthUser(updatedCurr);
+    }
+  };
+
+  const handleUpdateUserSignature = (userId: string, signatureUrl: string) => {
+    const updated = users.map(u => u.id === userId ? { ...u, signatureUrl } : u);
+    setUsers(updated);
+    saveStoredUsers(updated);
+    if (currentUser.id === userId) {
+      const updatedCurr = { ...currentUser, signatureUrl };
+      setCurrentUser(updatedCurr);
+      saveStoredAuthUser(updatedCurr);
+    }
+  };
+
+  const handleResetAllData = () => {
+    if (confirm('Apakah Anda yakin ingin mereset seluruh database GMCC ERP ke data awal?')) {
+      localStorage.clear();
+      window.location.reload();
+    }
+  };
+
+  // If not authenticated, render LoginScreen
+  if (!isAuthenticated) {
+    return (
+      <LoginScreen 
+        users={users} 
+        onLoginSuccess={handleLoginSuccess}
+        onResetUsers={() => {
+          const reset = resetUsersToDefault();
+          setUsers(reset);
+        }}
+      />
+    );
+  }
+
+  const pendingApprovalsCount = prs.filter(p => p.status === 'WAITING_PURCHASING' || p.status === 'WAITING_HOD' || p.status === 'WAITING_GM').length;
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+      {/* Header */}
+      <Navbar
+        currentUser={currentUser}
+        allUsers={users}
+        onSelectUser={(u) => {
+          setCurrentUser(u);
+          saveStoredAuthUser(u);
+        }}
+        pendingApprovalsCount={pendingApprovalsCount}
+        onOpenGitHubDrawer={() => setIsGitHubDrawerOpen(true)}
+        onNavigateToApprovals={() => setActiveTab('approval-center')}
+        onOpenChangePassword={() => setShowChangePasswordModal(true)}
+        onLogout={handleLogout}
+        onNavigateTab={(tab) => {
+          if (tab === 'github') {
+            setIsGitHubDrawerOpen(true);
+          } else {
+            setActiveTab(tab as ActiveTab);
+          }
+        }}
+        activeTab={activeTab}
+      />
+
+      <div className="flex-1 flex overflow-hidden">
+        {/* Desktop Sidebar (Top card removed as requested) */}
+        {/* Desktop Sidebar */}
+        <Sidebar
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            if (tab === 'github') {
+              setIsGitHubDrawerOpen(true);
+            } else {
+              setActiveTab(tab);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
+          pendingApprovalsCount={pendingApprovalsCount}
+          totalPOsCount={pos.length}
+          currentUserRole={currentUser.role}
+          currentUser={currentUser}
+          onOpenChangePassword={() => setShowChangePasswordModal(true)}
+          onLogout={handleLogout}
+        />
+
+        {/* Mobile Navigation */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900 border-t border-slate-800 px-2 py-1.5 flex items-center justify-around text-[10px]">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex flex-col items-center gap-1 p-1 ${activeTab === 'dashboard' ? 'text-cyan-400 font-bold' : 'text-slate-400'}`}
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            <span>Dashboard</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('pr-create')}
+            className={`flex flex-col items-center gap-1 p-1 ${activeTab === 'pr-create' ? 'text-cyan-400 font-bold' : 'text-slate-400'}`}
+          >
+            <PlusCircle className="w-4 h-4 text-cyan-400" />
+            <span>Buat PR</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('approval-center')}
+            className={`flex flex-col items-center gap-1 p-1 relative ${activeTab === 'approval-center' ? 'text-amber-400 font-bold' : 'text-slate-400'}`}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Approval</span>
+            {pendingApprovalsCount > 0 && (
+              <span className="absolute top-0 right-1 w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('purchase-orders')}
+            className={`flex flex-col items-center gap-1 p-1 ${activeTab === 'purchase-orders' ? 'text-cyan-400 font-bold' : 'text-slate-400'}`}
+          >
+            <Package className="w-4 h-4" />
+            <span>PO</span>
+          </button>
+          {/* Prominent Mobile Kas Kecil (Petty Cash) button */}
+          <button
+            onClick={() => setActiveTab('petty-cash')}
+            className={`flex flex-col items-center gap-1 p-1 ${
+              activeTab === 'petty-cash' ? 'text-amber-400 font-bold' : 'text-amber-300/80 hover:text-amber-300'
+            }`}
+          >
+            <Receipt className="w-4 h-4 text-amber-400" />
+            <span>Kas Kecil</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('reconciliation')}
+            className={`flex flex-col items-center gap-1 p-1 ${
+              activeTab === 'reconciliation' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+            }`}
+          >
+            <Scale className="w-4 h-4 text-emerald-400" />
+            <span>Rekonsiliasi</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('food-flash')}
+            className={`flex flex-col items-center gap-1 p-1 ${activeTab === 'food-flash' ? 'text-emerald-400 font-bold' : 'text-slate-400'}`}
+          >
+            <Utensils className="w-4 h-4" />
+            <span>Food Flash</span>
+          </button>
+          <button
+            onClick={handleLogout}
+            className="flex flex-col items-center gap-1 p-1 text-rose-400"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Keluar</span>
+          </button>
+        </div>
+
+        {/* Main Content View */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pb-20 md:pb-8">
+          {activeTab === 'dashboard' && (
+            <DashboardOverview
+              prs={prs}
+              pos={pos}
+              grns={grns}
+              foodFlash={foodFlash}
+              currentUser={currentUser}
+              auditLogs={auditLogs}
+              onNavigate={(tab) => setActiveTab(tab as ActiveTab)}
+            />
+          )}
+
+          {activeTab === 'pr-create' && (
+            <RequisitionCreateView
+              currentUser={currentUser}
+              vendors={vendors}
+              items={items}
+              departments={departments}
+              costCenters={costCenters}
+              coas={coas}
+              onSavePR={handleSavePR}
+              onNavigateToList={() => setActiveTab('prs')}
+            />
+          )}
+
+          {activeTab === 'prs' && (
+            <RequisitionsListView
+              prs={prs}
+              currentUser={currentUser}
+              vendors={vendors}
+              items={items}
+              costCenters={costCenters}
+              onNavigateToCreate={() => setActiveTab('pr-create')}
+              onNavigateToApproval={() => setActiveTab('approval-center')}
+              onEditPR={handleEditPR}
+              onDeletePR={handleDeletePR}
+            />
+          )}
+
+          {activeTab === 'approval-center' && (
+            <ApprovalCenterView
+              prs={prs}
+              currentUser={currentUser}
+              allUsers={users}
+              onUpdatePRStatus={handleUpdatePRStatus}
+              onCreatePOFromApprovedPR={handleCreatePOFromApprovedPR}
+            />
+          )}
+
+          {activeTab === 'purchase-orders' && (
+            <PurchaseOrdersView
+              pos={pos}
+              onUpdatePO={handleUpdatePO}
+            />
+          )}
+
+          {activeTab === 'receiving' && (
+            <GoodsReceivingView
+              grns={grns}
+              pos={pos}
+              currentUser={currentUser}
+              onSaveGRN={handleSaveGRN}
+            />
+          )}
+
+          {activeTab === 'food-flash' && (
+            <DailyFoodFlashView
+              records={foodFlash}
+              grns={grns}
+              currentUser={currentUser}
+              onUpdateRecord={handleUpdateFoodFlash}
+              onAddRecord={handleAddFoodFlash}
+            />
+          )}
+
+          {activeTab === 'recipe-cost' && (
+            <RecipeCostCenterView
+              recipes={recipes}
+              items={items}
+              costCenters={costCenters}
+              currentUser={currentUser}
+              onAddRecipe={handleAddRecipe}
+              onEditRecipe={handleEditRecipe}
+              onDeleteRecipe={handleDeleteRecipe}
+            />
+          )}
+
+          {activeTab === 'ap-aging' && (
+            hasRestrictedModuleAccess(currentUser) ? (
+              <ApAgingView
+                grns={grns}
+                vendors={vendors}
+                currentUser={currentUser}
+                onUpdateGRN={handleUpdateGRN}
+              />
+            ) : (
+              <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center max-w-lg mx-auto my-12 space-y-4 shadow-2xl">
+                <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+                  <ShieldAlert className="w-6 h-6" />
+                </div>
+                <h2 className="text-base font-bold text-white">Akses Modul Terbatas (Restricted Access)</h2>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Sesuai regulasi operasional GMCC: Modul AP Aging hanya dapat diakses oleh staf Purchasing, Head of Finance / Chief Accounting, General Manager, dan Administrator.
+                </p>
+                <button
+                  onClick={() => setActiveTab('dashboard')}
+                  className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs"
+                >
+                  Kembali ke Dashboard
+                </button>
+              </div>
+            )
+          )}
+
+          {activeTab === 'master-data' && (
+            hasRestrictedModuleAccess(currentUser) ? (
+              <MasterDataView
+                vendors={vendors}
+                items={items}
+                departments={departments}
+                costCenters={costCenters}
+                coas={coas}
+                currentUser={currentUser}
+                onAddVendor={handleAddVendor}
+                onEditVendor={handleEditVendor}
+                onDeleteVendor={handleDeleteVendor}
+                onAddItem={handleAddItem}
+                onAddDepartment={handleAddDepartment}
+                onEditDepartment={handleEditDepartment}
+                onDeleteDepartment={handleDeleteDepartment}
+                onAddCostCenter={handleAddCostCenter}
+                onEditCostCenter={handleEditCostCenter}
+                onDeleteCostCenter={handleDeleteCostCenter}
+                onAddCoa={handleAddCoa}
+                onEditCoa={handleEditCoa}
+                onDeleteCoa={handleDeleteCoa}
+              />
+            ) : (
+              <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center max-w-lg mx-auto my-12 space-y-4 shadow-2xl">
+                <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+                  <ShieldAlert className="w-6 h-6" />
+                </div>
+                <h2 className="text-base font-bold text-white">Akses Master Data Terbatas</h2>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Perubahan Master COA, Departemen, Vendor, dan Item hanya dapat dilakukan oleh Purchasing, Finance, GM, dan Admin.
+                </p>
+                <button
+                  onClick={() => setActiveTab('dashboard')}
+                  className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs"
+                >
+                  Kembali ke Dashboard
+                </button>
+              </div>
+            )
+          )}
+
+          {activeTab === 'petty-cash' && (
+            hasRestrictedModuleAccess(currentUser) ? (
+              <PettyCashSettlementView
+                periods={pettyCashPeriods}
+                onSavePeriod={handleSavePettyCashPeriod}
+                onDeletePeriod={handleDeletePettyCashPeriod}
+                pos={pos}
+                grns={grns}
+                currentUser={currentUser}
+                coas={coas}
+                costCenters={costCenters}
+              />
+            ) : (
+              <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center max-w-lg mx-auto my-12 space-y-4 shadow-2xl">
+                <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+                  <ShieldAlert className="w-6 h-6" />
+                </div>
+                <h2 className="text-base font-bold text-white">Akses Kas Kecil Terbatas</h2>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Pengelolaan file Petty Cash hanya dapat diakses oleh Purchasing, Head of Finance, GM, dan Administrator.
+                </p>
+                <button
+                  onClick={() => setActiveTab('dashboard')}
+                  className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs"
+                >
+                  Kembali ke Dashboard
+                </button>
+              </div>
+            )
+          )}
+
+          {activeTab === 'reconciliation' && (
+            hasRestrictedModuleAccess(currentUser) ? (
+              <PettyCashReconciliationView
+                grns={grns}
+                pos={pos}
+                pettyCashPeriods={pettyCashPeriods}
+                coas={coas}
+                costCenters={costCenters}
+                currentUser={currentUser}
+                onSavePettyCashPeriod={handleSavePettyCashPeriod}
+                onNavigateToPettyCash={() => setActiveTab('petty-cash')}
+              />
+            ) : (
+              <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center max-w-lg mx-auto my-12 space-y-4 shadow-2xl">
+                <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+                  <ShieldAlert className="w-6 h-6" />
+                </div>
+                <h2 className="text-base font-bold text-white">Akses Rekonsiliasi Terbatas</h2>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Audit tagihan dan rekonsiliasi kas kecil hanya dapat diakses oleh Purchasing, Head of Finance, GM, dan Administrator.
+                </p>
+                <button
+                  onClick={() => setActiveTab('dashboard')}
+                  className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs"
+                >
+                  Kembali ke Dashboard
+                </button>
+              </div>
+            )
+          )}
+
+          {activeTab === 'admin' && (
+            <AdminView
+              users={users}
+              currentUser={currentUser}
+              auditLogs={auditLogs}
+              departments={departments}
+              onAddUser={handleAddUser}
+              onEditUser={handleEditUser}
+              onDeleteUser={handleDeleteUser}
+              onUpdateUserPassword={handleUpdateUserPassword}
+              onUpdateUserSignature={handleUpdateUserSignature}
+              onResetAllData={handleResetAllData}
+            />
+          )}
+        </main>
+      </div>
+
+      {/* Persistent Floating GitHub Dock Button (Hanya di sebelah kanan layar) */}
+      <button
+        type="button"
+        onClick={() => setIsGitHubDrawerOpen(true)}
+        className="fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-slate-900/95 hover:bg-slate-800 border-l border-y border-cyan-500/50 hover:border-cyan-400 text-slate-200 px-2 sm:px-2.5 py-3.5 rounded-l-2xl shadow-2xl flex flex-col items-center gap-2 group transition-all hover:pl-3.5 cursor-pointer backdrop-blur-md"
+        title="Buka Sambungan GitHub &amp; Skrip Terminal (Panel Kanan)"
+      >
+        <div className="relative">
+          <Github className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
+          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500" />
+        </div>
+        <span className="text-[10px] font-black tracking-wider uppercase [writing-mode:vertical-lr] rotate-180 text-slate-300 group-hover:text-cyan-300 py-1 font-mono">
+          GitHub
+        </span>
+      </button>
+
+      {/* Right-Side Slide-Over GitHub Drawer */}
+      <GitHubRightDrawer
+        isOpen={isGitHubDrawerOpen}
+        onClose={() => setIsGitHubDrawerOpen(false)}
+        config={githubConfig}
+        onSaveConfig={(cfg) => {
+          setGithubConfig(cfg);
+          saveStoredGitHubConfig(cfg);
+        }}
+      />
+
+      {/* Change Password Modal for logged-in user */}
+      {showChangePasswordModal && (
+        <ChangePasswordModal
+          currentUser={currentUser}
+          onClose={() => setShowChangePasswordModal(false)}
+          onSaveNewPassword={handleUpdateUserPassword}
+        />
+      )}
+    </div>
+  );
+}
