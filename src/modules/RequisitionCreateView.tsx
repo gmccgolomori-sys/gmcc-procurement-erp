@@ -12,7 +12,8 @@ import {
   isEventCoa,
   OutletDestination,
   filterItemsByCoa,
-  getItemCoaCategory
+  getItemCoaCategory,
+  MAX_PR_LIMIT
 } from '../types/procurement';
 import { 
   FileText, 
@@ -229,15 +230,25 @@ export const RequisitionCreateView: React.FC<RequisitionCreateViewProps> = ({
   };
 
   const subtotalEstimated = itemLines.reduce((acc, curr) => acc + (Number(curr.totalEstimated) || 0), 0);
+  const isOverPrLimit = subtotalEstimated > MAX_PR_LIMIT;
+  const overPrAmount = Math.max(0, subtotalEstimated - MAX_PR_LIMIT);
+  const remainingPrQuota = Math.max(0, MAX_PR_LIMIT - subtotalEstimated);
+  const prUsagePercent = Math.min(100, Math.round((subtotalEstimated / MAX_PR_LIMIT) * 100));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     if (!purpose.trim()) {
       setError('Mohon tuliskan tujuan / peruntukan pengajuan barang ini.');
       return;
     }
     if (itemLines.length === 0) {
       setError('Mohon tambahkan minimal 1 barang pesanan.');
+      return;
+    }
+    if (subtotalEstimated > MAX_PR_LIMIT) {
+      setError(`Total pengajuan PR (${formatRupiah(subtotalEstimated)}) melebihi batas maksimal ${formatRupiah(MAX_PR_LIMIT)} (kelebihan ${formatRupiah(subtotalEstimated - MAX_PR_LIMIT)}). Silakan kurangi jumlah/item atau pecah ke PR terpisah agar pagu Petty Cash Rp 50.000.000 tetap aman.`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -780,18 +791,60 @@ export const RequisitionCreateView: React.FC<RequisitionCreateViewProps> = ({
             </table>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-3 border-t border-slate-800">
+          <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 pt-3 border-t border-slate-800">
             <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] text-slate-400 max-w-xl">
-              <span className="font-bold text-amber-300 block mb-0.5">ℹ️ Catatan Ketentuan Perpajakan GMCC:</span>
-              <span>Formulir PR pemohon diajukan murni berdasarkan estimasi harga barang tanpa kalkulasi PPN. Penentuan status pajak (apakah rekanan dikenakan <b>PPN 11% (PKP)</b> atau <b>Bebas Pajak (Non-PKP 0%)</b>) akan ditetapkan seutuhnya oleh <b>Divisi Purchasing</b> pada saat verifikasi & penerbitan Purchase Order (PO).</span>
+              <span className="font-bold text-amber-300 block mb-0.5">ℹ️ Catatan Ketentuan Perpajakan &amp; Plafon PR GMCC:</span>
+              <span>Formulir PR pemohon diajukan murni berdasarkan estimasi harga barang tanpa kalkulasi PPN (penentuan PKP 11% / Non-PKP oleh Purchasing). Maksimal nilai 1 dokumen PR adalah <b className="text-emerald-300">{formatRupiah(MAX_PR_LIMIT)}</b> agar batas Petty Cash Rp 50.000.000 tetap aman.</span>
             </div>
-            <div className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center gap-4 shrink-0">
-              <span className="text-slate-400 font-bold uppercase text-[11px]">Total Estimasi Anggaran:</span>
-              <span className="text-xl font-black text-cyan-400 font-mono">
-                {formatRupiah(subtotalEstimated)}
-              </span>
+
+            <div className={`p-3.5 rounded-xl border flex flex-col gap-2 shrink-0 min-w-[290px] transition-colors ${
+              isOverPrLimit
+                ? 'bg-rose-950/40 border-rose-500/60'
+                : 'bg-slate-800/80 border-slate-700'
+            }`}>
+              <div className="flex items-center justify-between gap-4">
+                <span className={`font-bold uppercase text-[11px] ${isOverPrLimit ? 'text-rose-300' : 'text-slate-400'}`}>
+                  Total Estimasi Anggaran:
+                </span>
+                <span className={`text-xl font-black font-mono ${isOverPrLimit ? 'text-rose-400' : 'text-cyan-400'}`}>
+                  {formatRupiah(subtotalEstimated)}
+                </span>
+              </div>
+
+              <div className="space-y-1">
+                <div className="w-full h-1.5 rounded-full bg-slate-900 overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-300 ${
+                      isOverPrLimit ? 'bg-rose-500' : prUsagePercent >= 85 ? 'bg-amber-400' : 'bg-emerald-400'
+                    }`}
+                    style={{ width: `${prUsagePercent}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-[10px] font-mono">
+                  <span className="text-slate-400">Batas Maks PR: {formatRupiah(MAX_PR_LIMIT)}</span>
+                  {isOverPrLimit ? (
+                    <span className="text-rose-400 font-bold">Lebih {formatRupiah(overPrAmount)}!</span>
+                  ) : (
+                    <span className="text-emerald-400 font-semibold">Sisa Kuota: {formatRupiah(remainingPrQuota)}</span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
+
+          {isOverPrLimit && (
+            <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/50 text-rose-200 text-xs flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <div className="font-bold text-rose-300">
+                  Pengajuan Melebihi Batas Maksimal PR ({formatRupiah(MAX_PR_LIMIT)})
+                </div>
+                <p className="text-[11px] text-rose-200/90 leading-relaxed">
+                  Total biaya PR saat ini sebesar <b>{formatRupiah(subtotalEstimated)}</b> (melebihi <b>{formatRupiah(overPrAmount)}</b>). Pembuatan PR biaya tidak boleh melebihi <b>Rp 40.000.000</b> agar realisasi Petty Cash tidak melewati pagu Rp 50.000.000. Harap kurangi Qty/item atau pecah menjadi beberapa PR terpisah.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Submit Bar */}
@@ -805,10 +858,15 @@ export const RequisitionCreateView: React.FC<RequisitionCreateViewProps> = ({
           </button>
           <button
             type="submit"
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-500 hover:to-sky-500 text-white font-bold text-xs shadow-lg shadow-cyan-600/30 flex items-center gap-2 transition-all hover:scale-105"
+            disabled={isOverPrLimit}
+            className={`px-6 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all ${
+              isOverPrLimit
+                ? 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-70 border border-rose-500/40'
+                : 'bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-500 hover:to-sky-500 text-white shadow-lg shadow-cyan-600/30 hover:scale-105'
+            }`}
           >
             <Send className="w-4 h-4" />
-            <span>Kirim Pengajuan PR ke Purchasing</span>
+            <span>{isOverPrLimit ? 'Melebihi Batas Maks. Rp 40 Juta' : 'Kirim Pengajuan PR ke Purchasing'}</span>
           </button>
         </div>
       </form>

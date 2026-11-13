@@ -663,3 +663,7 @@ export const formatItdcInvoiceNumber = (year: number, monthOneBased: number, seq
   const seqStr = String(Math.max(1, seq || 1)).padStart(3, '0');
   return `INV/GMCC-ITDC/${safeYear}/${roman}-${seqStr}`;
 };
+
+// Batas maksimal pembuatan 1 dokumen Purchase Requisition (PR) agar batch Petty Cash (Rp 50.000.000) tetap aman
+export const MAX_PR_LIMIT = 40_000_000;
+

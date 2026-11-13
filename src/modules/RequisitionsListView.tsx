@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PurchaseRequisition, UserAccount, PRItemLine, Vendor, MasterItem, CostCenter } from '../types/procurement';
+import { PurchaseRequisition, UserAccount, PRItemLine, Vendor, MasterItem, CostCenter, MAX_PR_LIMIT } from '../types/procurement';
 import { 
   FileText, 
   Search, 
@@ -139,11 +139,19 @@ export const RequisitionsListView: React.FC<RequisitionsListViewProps> = ({
     setEditItems(editItems.filter((_, i) => i !== idx));
   };
 
+  const editSubtotal = editItems.reduce((acc, it) => acc + (Number(it.totalEstimated) || 0), 0);
+  const isEditOverPrLimit = editSubtotal > MAX_PR_LIMIT;
+  const editOverPrAmount = Math.max(0, editSubtotal - MAX_PR_LIMIT);
+
   const handleSaveEditedPR = (e: React.FormEvent) => {
     e.preventDefault();
     if (!prToEdit || !onEditPR) return;
 
-    const subtotal = editItems.reduce((acc, it) => acc + (it.totalEstimated || 0), 0);
+    const subtotal = editItems.reduce((acc, it) => acc + (Number(it.totalEstimated) || 0), 0);
+    if (subtotal > MAX_PR_LIMIT) {
+      alert(`Total pengajuan PR (${formatRupiah(subtotal)}) tidak boleh melebihi batas maksimal ${formatRupiah(MAX_PR_LIMIT)} agar Petty Cash Rp 50.000.000 tetap aman. Silakan sesuaikan qty/item atau pecah PR.`);
+      return;
+    }
     const selectedVendor = vendors.find(v => v.id === editSuggestedVendorId);
 
     // If PR was previously REJECTED, re-submitting resets status to WAITING_PURCHASING
@@ -719,17 +727,28 @@ export const RequisitionsListView: React.FC<RequisitionsListViewProps> = ({
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot className="bg-slate-800/90 font-bold border-t border-slate-700 text-white">
+                    <tfoot className={`font-bold border-t border-slate-700 text-white ${isEditOverPrLimit ? 'bg-rose-950/50' : 'bg-slate-800/90'}`}>
                       <tr>
-                        <td colSpan={5} className="px-3 py-2 text-right uppercase text-[10px] text-slate-400">Total Baru Setelah Penyesuaian:</td>
-                        <td className="px-3 py-2 text-right text-cyan-300 font-mono text-sm whitespace-nowrap">
-                          {formatRupiah(editItems.reduce((acc, it) => acc + (it.totalEstimated || 0), 0))}
+                        <td colSpan={5} className="px-3 py-2 text-right uppercase text-[10px] text-slate-400">
+                          Total Baru Setelah Penyesuaian (Maks. {formatRupiah(MAX_PR_LIMIT)}):
+                        </td>
+                        <td className={`px-3 py-2 text-right font-mono text-sm whitespace-nowrap ${isEditOverPrLimit ? 'text-rose-400' : 'text-cyan-300'}`}>
+                          {formatRupiah(editSubtotal)}
                         </td>
                         <td></td>
                       </tr>
                     </tfoot>
                   </table>
                 </div>
+
+                {isEditOverPrLimit && (
+                  <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/50 text-rose-200 text-[11px] flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                    <span>
+                      Total PR melebihi batas maksimal <b>{formatRupiah(MAX_PR_LIMIT)}</b> (kelebihan <b>{formatRupiah(editOverPrAmount)}</b>). Kurangi jumlah/harga atau pecah pengajuan agar Petty Cash Rp 50.000.000 tetap aman.
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
@@ -742,11 +761,20 @@ export const RequisitionsListView: React.FC<RequisitionsListViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-lg shadow-cyan-600/30 flex items-center gap-1.5 transition-all"
+                  disabled={isEditOverPrLimit}
+                  className={`px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                    isEditOverPrLimit
+                      ? 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-70 border border-rose-500/40'
+                      : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-600/30'
+                  }`}
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>
-                    {prToEdit.status === 'REJECTED' ? 'Simpan Revisi & Ajukan Kembali PR' : 'Simpan Penyesuaian Purchasing'}
+                    {isEditOverPrLimit
+                      ? 'Melebihi Batas Maks. Rp 40 Juta'
+                      : prToEdit.status === 'REJECTED'
+                        ? 'Simpan Revisi & Ajukan Kembali PR'
+                        : 'Simpan Penyesuaian Purchasing'}
                   </span>
                 </button>
               </div>
