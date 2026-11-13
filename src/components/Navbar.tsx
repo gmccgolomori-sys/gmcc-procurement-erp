@@ -235,6 +235,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {onLogout && (
                   <div className="pt-2 border-t border-slate-800">
                     <button
+                      type="button"
                       onClick={() => {
                         setShowRoleDropdown(false);
                         onLogout();
@@ -249,6 +250,22 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             )}
           </div>
+
+          {/* Direct 1-Click Log Out Button in Top-Right Navbar */}
+          {onLogout && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowRoleDropdown(false);
+                onLogout();
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 hover:text-rose-200 text-xs font-bold transition-colors shrink-0"
+              title="Keluar dari Sistem / Ganti Akun (Log Out)"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Keluar</span>
+            </button>
+          )}
 
           {/* Mobile Hamburger Drawer Button */}
           <button

@@ -115,8 +115,15 @@ export default function App() {
     return defaultUser;
   });
 
-  // Always keep user active in ERP unless explicitly logging out
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  // Track explicit logout so refreshing while logged out stays on LoginScreen
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage.getItem('gmcc_erp_logged_out') === 'true') {
+        return false;
+      }
+    } catch {}
+    return true;
+  });
 
   // Active navigation tab
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
@@ -134,17 +141,29 @@ export default function App() {
 
   // Login handler
   const handleLoginSuccess = (user: UserAccount) => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem('gmcc_erp_logged_out');
+      }
+    } catch {}
     setCurrentUser(user);
     setIsAuthenticated(true);
+    setActiveTab('dashboard');
     saveStoredAuthUser(user);
   };
 
-  // Logout handler
+  // Logout handler (Direct logout without window.confirm so it works reliably inside iframes)
   const handleLogout = () => {
-    if (confirm('Apakah Anda yakin ingin keluar dari sistem GMCC ERP?')) {
-      setIsAuthenticated(false);
-      saveStoredAuthUser(null);
-    }
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem('gmcc_erp_logged_out', 'true');
+      }
+    } catch {}
+    setIsGitHubDrawerOpen(false);
+    setShowChangePasswordModal(false);
+    setIsAuthenticated(false);
+    setActiveTab('dashboard');
+    saveStoredAuthUser(null);
   };
 
   // 30-Minute Idle / Inactivity Auto-Logout
@@ -158,7 +177,14 @@ export default function App() {
     let timerId: ReturnType<typeof setTimeout>;
 
     const performAutoLogout = () => {
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem('gmcc_erp_logged_out', 'true');
+        }
+      } catch {}
+      setIsGitHubDrawerOpen(false);
       setIsAuthenticated(false);
+      setActiveTab('dashboard');
       saveStoredAuthUser(null);
       setIdleLogoutNotice('Sesi Anda telah berakhir secara otomatis karena tidak ada aktivitas selama 30 menit demi keamanan akun GMCC ERP. Silakan login kembali.');
     };

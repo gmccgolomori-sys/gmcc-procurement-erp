@@ -44,14 +44,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       (u.email && u.email.toLowerCase() === trimmedInput)
     );
 
-    // 2. Fallback aliases for GMCC executive admin
+    // 2. Fallback aliases for GMCC executive admin / IT
     if (!user && (
       trimmedInput === 'gmccgolomori@gmail.com' ||
       trimmedInput === 'gmcc' ||
       trimmedInput === 'gmccgolomori' ||
       trimmedInput === 'admin' ||
       trimmedInput === 'administrator' ||
-      trimmedInput === 'admin.it@golomori.id'
+      trimmedInput === 'admin.it@golomori.id' ||
+      trimmedInput === 'it' ||
+      trimmedInput === 'it_admin'
     )) {
       user = adminAccount;
     }
