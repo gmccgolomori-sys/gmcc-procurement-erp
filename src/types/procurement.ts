@@ -515,6 +515,17 @@ export const hasRestrictedModuleAccess = (user: UserAccount | null): boolean => 
   return false;
 };
 
+// Role Access Control Helper: Khusus Tim IT & System Administrator (Panel Kanan / GitHub & Sistem IT)
+export const hasItAdminAccess = (user: UserAccount | null): boolean => {
+  if (!user) return false;
+  if (user.role === 'ADMIN') return true;
+  const dept = (user.department || '').toLowerCase();
+  const title = (user.jobTitle || '').toLowerCase();
+  if (dept.includes('information technology') || /\bit\b/i.test(dept)) return true;
+  if (title.includes('it administrator') || title.includes('it system') || /\bit\b/i.test(title)) return true;
+  return false;
+};
+
 export interface FoodFlashRecord {
   id: string;
   date: string; // YYYY-MM-DD

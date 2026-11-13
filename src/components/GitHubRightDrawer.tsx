@@ -187,11 +187,11 @@ export const GitHubRightDrawer: React.FC<GitHubRightDrawerProps> = ({
                   </h3>
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    Panel Kanan
+                    Akses IT &amp; Admin
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400">
-                  Sinkronisasi Repositori &amp; Push Kode Sumber
+                  Panel Kanan • Sinkronisasi Repositori &amp; Push Kode Sumber
                 </p>
               </div>
             </div>

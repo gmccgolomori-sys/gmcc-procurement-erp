@@ -15,7 +15,8 @@ import {
   RecipeCostRecord,
   PettyCashSettlementPeriod,
   PettyCashBillingFile,
-  hasRestrictedModuleAccess
+  hasRestrictedModuleAccess,
+  hasItAdminAccess
 } from './types/procurement';
 import { 
   getStoredUsers, 
@@ -121,8 +122,15 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
-  // GitHub Right-Side Slide-Over Drawer state (Strictly on the right side)
+  // GitHub Right-Side Slide-Over Drawer state (Strictly on the right side - IT/Admin Only)
   const [isGitHubDrawerOpen, setIsGitHubDrawerOpen] = useState(false);
+  const hasItAccess = hasItAdminAccess(currentUser);
+
+  useEffect(() => {
+    if (!hasItAccess && isGitHubDrawerOpen) {
+      setIsGitHubDrawerOpen(false);
+    }
+  }, [hasItAccess, isGitHubDrawerOpen]);
 
   // Login handler
   const handleLoginSuccess = (user: UserAccount) => {
@@ -588,13 +596,13 @@ export default function App() {
           saveStoredAuthUser(u);
         }}
         pendingApprovalsCount={pendingApprovalsCount}
-        onOpenGitHubDrawer={() => setIsGitHubDrawerOpen(true)}
+        onOpenGitHubDrawer={hasItAccess ? () => setIsGitHubDrawerOpen(true) : undefined}
         onNavigateToApprovals={() => setActiveTab('approval-center')}
         onOpenChangePassword={() => setShowChangePasswordModal(true)}
         onLogout={handleLogout}
         onNavigateTab={(tab) => {
           if (tab === 'github') {
-            setIsGitHubDrawerOpen(true);
+            if (hasItAccess) setIsGitHubDrawerOpen(true);
           } else {
             setActiveTab(tab as ActiveTab);
           }
@@ -609,7 +617,7 @@ export default function App() {
           activeTab={activeTab}
           onTabChange={(tab) => {
             if (tab === 'github') {
-              setIsGitHubDrawerOpen(true);
+              if (hasItAccess) setIsGitHubDrawerOpen(true);
             } else {
               setActiveTab(tab);
               window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1010,33 +1018,37 @@ export default function App() {
         </main>
       </div>
 
-      {/* Persistent Floating GitHub Dock Button (Hanya di sebelah kanan layar) */}
-      <button
-        type="button"
-        onClick={() => setIsGitHubDrawerOpen(true)}
-        className="fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-slate-900/95 hover:bg-slate-800 border-l border-y border-cyan-500/50 hover:border-cyan-400 text-slate-200 px-2 sm:px-2.5 py-3.5 rounded-l-2xl shadow-2xl flex flex-col items-center gap-2 group transition-all hover:pl-3.5 cursor-pointer backdrop-blur-md"
-        title="Buka Sambungan GitHub &amp; Skrip Terminal (Panel Kanan)"
-      >
-        <div className="relative">
-          <Github className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
-          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500" />
-        </div>
-        <span className="text-[10px] font-black tracking-wider uppercase [writing-mode:vertical-lr] rotate-180 text-slate-300 group-hover:text-cyan-300 py-1 font-mono">
-          GitHub
-        </span>
-      </button>
+      {/* Persistent Floating GitHub Dock Button (Hanya di sebelah kanan layar - Khusus IT / Admin) */}
+      {hasItAccess && (
+        <button
+          type="button"
+          onClick={() => setIsGitHubDrawerOpen(true)}
+          className="fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-slate-900/95 hover:bg-slate-800 border-l border-y border-cyan-500/50 hover:border-cyan-400 text-slate-200 px-2 sm:px-2.5 py-3.5 rounded-l-2xl shadow-2xl flex flex-col items-center gap-2 group transition-all hover:pl-3.5 cursor-pointer backdrop-blur-md"
+          title="Buka Sambungan GitHub & Skrip Terminal (Khusus IT / Admin)"
+        >
+          <div className="relative">
+            <Github className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500" />
+          </div>
+          <span className="text-[10px] font-black tracking-wider uppercase [writing-mode:vertical-lr] rotate-180 text-slate-300 group-hover:text-cyan-300 py-1 font-mono">
+            GitHub
+          </span>
+        </button>
+      )}
 
-      {/* Right-Side Slide-Over GitHub Drawer */}
-      <GitHubRightDrawer
-        isOpen={isGitHubDrawerOpen}
-        onClose={() => setIsGitHubDrawerOpen(false)}
-        config={githubConfig}
-        onSaveConfig={(cfg) => {
-          setGithubConfig(cfg);
-          saveStoredGitHubConfig(cfg);
-        }}
-      />
+      {/* Right-Side Slide-Over GitHub Drawer (Khusus IT / Admin) */}
+      {hasItAccess && (
+        <GitHubRightDrawer
+          isOpen={isGitHubDrawerOpen}
+          onClose={() => setIsGitHubDrawerOpen(false)}
+          config={githubConfig}
+          onSaveConfig={(cfg) => {
+            setGithubConfig(cfg);
+            saveStoredGitHubConfig(cfg);
+          }}
+        />
+      )}
 
       {/* Change Password Modal for logged-in user */}
       {showChangePasswordModal && (
