@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { Vendor, MasterItem, Department, CostCenter, ChartOfAccount, UserAccount, CompanyBankAccount, getItemCoaCategory } from '../types/procurement';
+import { Vendor, MasterItem, Department, CostCenter, ChartOfAccount, UserAccount, CompanyBankAccount, getItemLinkedCoas } from '../types/procurement';
 import { getStoredBankAccounts, saveStoredBankAccounts } from '../utils/procurementStorage';
 import { 
   Database, 
@@ -236,7 +236,9 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
   const [editItemPrice, setEditItemPrice] = useState(0);
   const [editItemStock, setEditItemStock] = useState(0);
   const [editItemMinStock, setEditItemMinStock] = useState(0);
-  const [editItemCoaCategory, setEditItemCoaCategory] = useState<'BPP' | 'NON_BPP'>('BPP');
+  const [editItemCoaNames, setEditItemCoaNames] = useState<string[]>(['BPP']);
+  const [itemFormError, setItemFormError] = useState<string | null>(null);
+  const [itemStatusBanner, setItemStatusBanner] = useState<string | null>(null);
 
   const [showAddVendorModal, setShowAddVendorModal] = useState(false);
   const [showEditVendorModal, setShowEditVendorModal] = useState(false);
@@ -348,7 +350,46 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
   const [newItemPrice, setNewItemPrice] = useState(100000);
   const [newItemStock, setNewItemStock] = useState(50);
   const [newItemMinStock, setNewItemMinStock] = useState(20);
-  const [newItemCoaCategory, setNewItemCoaCategory] = useState<'BPP' | 'NON_BPP'>('BPP');
+  const [newItemCoaNames, setNewItemCoaNames] = useState<string[]>(['BPP']);
+
+  // Gabungkan seluruh COA resmi dari Master COA (fallback default jika kosong)
+  const allAvailableCoas: ChartOfAccount[] = coas && coas.length > 0
+    ? coas
+    : [
+        { id: 'coa-1', code: 'COA-BPP', name: 'BPP', category: 'Food & Beverage Cost', glAccountCode: '732-001', isActive: true },
+        { id: 'coa-2', code: 'COA-NONBPP', name: 'NON BPP', category: 'Operational & General Expense', glAccountCode: '732-002', isActive: true },
+        { id: 'coa-3', code: 'COA-TRN', name: 'Transport', category: 'Logistics & Travel', glAccountCode: '741-001', isActive: true },
+        { id: 'coa-4', code: 'COA-EVT', name: 'Event Cost', category: 'MICE & Event Expense', glAccountCode: '752-001', isActive: true },
+        { id: 'coa-5', code: 'COA-REE', name: 'Rental Equipment Event', category: 'Event Equipment Rental', glAccountCode: '752-002', isActive: true },
+        { id: 'coa-6', code: 'COA-MEAL', name: 'Meal Employee', category: 'HR & Staff Welfare', glAccountCode: '622-022', isActive: true }
+      ];
+
+  const toggleCoaInList = (current: string[], coaNameToToggle: string): string[] => {
+    const exists = current.some(c => c.toLowerCase() === coaNameToToggle.toLowerCase());
+    if (exists) {
+      return current.filter(c => c.toLowerCase() !== coaNameToToggle.toLowerCase());
+    }
+    return [...current, coaNameToToggle];
+  };
+
+  const buildItemCoaFields = (selectedNames: string[]) => {
+    const cleaned = selectedNames.map(s => s.trim()).filter(Boolean);
+    const finalNames = cleaned.length > 0 ? cleaned : ['NON BPP'];
+    const matchedCodes = finalNames.map(n => {
+      const found = allAvailableCoas.find(c => c.name.toLowerCase() === n.toLowerCase());
+      return found ? found.code : n.toUpperCase().replace(/\s+/g, '-');
+    });
+    const hasBpp = finalNames.some(n => {
+      const u = n.toUpperCase();
+      return u === 'BPP' || (u.includes('BPP') && !u.includes('NON'));
+    });
+    return {
+      coaCategory: hasBpp ? ('BPP' as const) : ('NON_BPP' as const),
+      coaName: finalNames.join(', '),
+      coaNames: finalNames,
+      coaCodes: matchedCodes
+    };
+  };
 
   // Vendor Form State
   const [newVenCode, setNewVenCode] = useState(`VND-${Math.floor(100 + Math.random() * 900)}`);
@@ -385,7 +426,12 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
   const handleCreateItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItemName.trim()) return;
+    if (newItemCoaNames.length === 0) {
+      setItemFormError('Pilih minimal 1 akun COA (boleh sambung 2 atau beberapa COA sekaligus).');
+      return;
+    }
 
+    const coaFields = buildItemCoaFields(newItemCoaNames);
     const item: MasterItem = {
       id: `item-${Date.now()}`,
       sku: newItemSku,
@@ -397,16 +443,21 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
       departments: [departments[0]?.name || 'Food & Beverage Department'],
       stockQuantity: Number(newItemStock) || 0,
       minimumStock: Number(newItemMinStock) || 0,
-      coaCategory: newItemCoaCategory
+      ...coaFields
     };
 
     onAddItem(item);
+    setItemFormError(null);
     setShowAddItemModal(false);
     setNewItemName('');
     setNewItemSpec('');
+    setNewItemCoaNames(['BPP']);
+    setItemStatusBanner(`Item "${item.name}" berhasil ditambahkan dengan sambungan COA: ${coaFields.coaNames.join(', ')}.`);
+    setTimeout(() => setItemStatusBanner(null), 4000);
   };
 
   const handleStartEditItem = (it: MasterItem) => {
+    setItemFormError(null);
     setEditingItemId(it.id);
     setEditItemSku(it.sku);
     setEditItemName(it.name);
@@ -416,14 +467,19 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
     setEditItemPrice(it.lastPurchasePrice || 0);
     setEditItemStock(it.stockQuantity || 0);
     setEditItemMinStock(it.minimumStock || 0);
-    setEditItemCoaCategory(getItemCoaCategory(it));
+    setEditItemCoaNames(getItemLinkedCoas(it));
     setShowEditItemModal(true);
   };
 
   const handleSaveEditItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingItemId || !editItemName.trim()) return;
+    if (editItemCoaNames.length === 0) {
+      setItemFormError('Pilih minimal 1 akun COA (boleh sambung 2 atau beberapa COA sekaligus).');
+      return;
+    }
 
+    const coaFields = buildItemCoaFields(editItemCoaNames);
     const updated: MasterItem = {
       id: editingItemId,
       sku: editItemSku,
@@ -435,14 +491,16 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
       departments: [departments[0]?.name || 'Food & Beverage Department'],
       stockQuantity: Number(editItemStock) || 0,
       minimumStock: Number(editItemMinStock) || 0,
-      coaCategory: editItemCoaCategory
+      ...coaFields
     };
 
     if (onEditItem) {
       onEditItem(updated);
     }
+    setItemFormError(null);
     setShowEditItemModal(false);
-    alert(`Spesifikasi dan data barang "${updated.name}" berhasil diperbarui!`);
+    setItemStatusBanner(`Data & klasifikasi COA barang "${updated.name}" diperbarui (${coaFields.coaNames.join(', ')}).`);
+    setTimeout(() => setItemStatusBanner(null), 4000);
   };
 
   // Open Add Vendor Modal
@@ -703,7 +761,9 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
               </button>
               <button
                 onClick={() => {
+                  setItemFormError(null);
                   setNewItemSku(`ITM-${Math.floor(100 + Math.random() * 900)}`);
+                  setNewItemCoaNames(['BPP']);
                   setShowAddItemModal(true);
                 }}
                 className="px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-lg shadow-cyan-600/20 flex items-center gap-1.5 transition-all"
@@ -894,6 +954,7 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
               <button
                 type="button"
                 onClick={() => {
+                  setItemFormError(null);
                   setNewItemSku(`ITM-${Math.floor(100 + Math.random() * 900)}`);
                   setNewItemName('');
                   setNewItemSpec('');
@@ -902,6 +963,7 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
                   setNewItemPrice(50000);
                   setNewItemStock(20);
                   setNewItemMinStock(5);
+                  setNewItemCoaNames(['BPP']);
                   setShowAddItemModal(true);
                 }}
                 className="px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shrink-0 flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
@@ -912,10 +974,26 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
             </div>
           )}
 
+          {itemStatusBanner && (
+            <div className="p-3.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 text-xs font-medium flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>{itemStatusBanner}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setItemStatusBanner(null)}
+                className="text-emerald-300 hover:text-white font-bold"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           <div className="relative">
             <input
               type="text"
-              placeholder="Cari berdasarkan nama barang, sku, atau spesifikasi detail..."
+              placeholder="Cari berdasarkan nama barang, sku, spesifikasi, atau akun COA terhubung..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
@@ -941,24 +1019,46 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
                 </thead>
                 <tbody className="divide-y divide-slate-800 text-slate-300">
                   {items
-                    .filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                 (i.specification && i.specification.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                                 i.sku.toLowerCase().includes(searchTerm.toLowerCase()))
-                    .map((it) => (
+                    .filter(i => {
+                      const q = searchTerm.toLowerCase();
+                      return (
+                        i.name.toLowerCase().includes(q) ||
+                        (i.specification && i.specification.toLowerCase().includes(q)) ||
+                        i.sku.toLowerCase().includes(q) ||
+                        getItemLinkedCoas(i).join(' ').toLowerCase().includes(q)
+                      );
+                    })
+                    .map((it) => {
+                      const linkedCoas = getItemLinkedCoas(it);
+                      return (
                       <tr key={it.id} className="hover:bg-slate-800/40">
                         <td className="px-4 py-3 font-mono text-cyan-400 font-bold">{it.sku}</td>
                         <td className="px-4 py-3 font-bold text-white">{it.name}</td>
                         <td className="px-4 py-3 text-slate-400 text-[11px] max-w-xs">{it.specification || '-'}</td>
                         <td className="px-4 py-3">
-                          {getItemCoaCategory(it) === 'BPP' ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 whitespace-nowrap">
-                              BPP (Bahan Pokok)
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 whitespace-nowrap">
-                              NON BPP (Supplies/Op)
-                            </span>
-                          )}
+                          <div className="flex flex-wrap gap-1 max-w-[230px]">
+                            {linkedCoas.map((coaLabel) => {
+                              const upper = coaLabel.toUpperCase();
+                              const isBppChip = upper === 'BPP' || (upper.includes('BPP') && !upper.includes('NON'));
+                              const isEventChip = upper.includes('EVENT') || upper.includes('RENTAL');
+                              const isMealChip = upper.includes('MEAL');
+                              const chipColor = isBppChip
+                                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                                : isEventChip
+                                  ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                                  : isMealChip
+                                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                                    : 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30';
+                              return (
+                                <span
+                                  key={coaLabel}
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${chipColor}`}
+                                >
+                                  {coaLabel}
+                                </span>
+                              );
+                            })}
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-slate-300">{it.category}</td>
                         <td className="px-4 py-3 text-center font-mono">{it.unit}</td>
@@ -999,7 +1099,8 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
@@ -1535,7 +1636,7 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
       {/* Modal: Tambah Item */}
       {showAddItemModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white">Tambah Item Master Baru</h3>
               <button onClick={() => setShowAddItemModal(false)} className="text-slate-400 hover:text-white">
@@ -1566,21 +1667,73 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">
-                  Klasifikasi COA Resmi GMCC *
-                </label>
-                <select
-                  value={newItemCoaCategory}
-                  onChange={(e) => setNewItemCoaCategory(e.target.value as 'BPP' | 'NON_BPP')}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white font-medium focus:outline-none focus:border-cyan-500 text-xs"
-                >
-                  <option value="BPP">BPP - Bahan Pokok Penjualan (Food &amp; Beverage / Dapur / Bar)</option>
-                  <option value="NON_BPP">NON BPP - Perlengkapan Operasional / Cleaning / AV / MEP / ATK</option>
-                </select>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Klasifikasi ini menghubungkan barang dengan filter akun COA pada pembuatan PR baru.
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="block text-slate-300 font-semibold">
+                    Sambungan COA Resmi GMCC * <span className="text-cyan-400 font-normal">(Bisa pilih 1, 2, atau beberapa COA)</span>
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setItemFormError(null);
+                        setNewItemCoaNames(allAvailableCoas.map(c => c.name));
+                      }}
+                      className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-[10px] font-semibold"
+                    >
+                      Pilih Semua ({allAvailableCoas.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewItemCoaNames([allAvailableCoas[0]?.name || 'BPP'])}
+                      className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[10px] font-semibold"
+                    >
+                      Reset 1 COA
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 max-h-48 overflow-y-auto">
+                  {allAvailableCoas.map((coaObj) => {
+                    const checked = newItemCoaNames.some(c => c.toLowerCase() === coaObj.name.toLowerCase());
+                    return (
+                      <label
+                        key={coaObj.id}
+                        className={`flex items-start gap-2.5 p-2 rounded-lg border cursor-pointer transition-colors ${
+                          checked
+                            ? 'bg-cyan-500/15 border-cyan-500/50 text-white'
+                            : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            setItemFormError(null);
+                            setNewItemCoaNames(prev => toggleCoaInList(prev, coaObj.name));
+                          }}
+                          className="mt-0.5 rounded border-slate-600 bg-slate-800 text-cyan-500 focus:ring-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="font-bold text-xs text-white truncate">{coaObj.name}</span>
+                            <span className="font-mono text-[9px] text-cyan-400 shrink-0">{coaObj.code}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate">
+                            {coaObj.glAccountCode} · {coaObj.category}
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                <p className="text-[10px] text-slate-400">
+                  Terhubung ({newItemCoaNames.length} COA): <b className="text-cyan-300">{newItemCoaNames.length > 0 ? newItemCoaNames.join(', ') : 'Belum ada COA dipilih'}</b>
                 </p>
+                {itemFormError && (
+                  <p className="text-[11px] text-rose-400 font-semibold">{itemFormError}</p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -1658,7 +1811,7 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
       {/* Modal: Edit Item & Spesifikasi (Dapat diakses Requestor, Admin, Purchasing) */}
       {showEditItemModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <Edit2 className="w-5 h-5 text-cyan-400" />
@@ -1718,21 +1871,73 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">
-                  Klasifikasi COA Resmi GMCC *
-                </label>
-                <select
-                  value={editItemCoaCategory}
-                  onChange={(e) => setEditItemCoaCategory(e.target.value as 'BPP' | 'NON_BPP')}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white font-medium focus:outline-none focus:border-cyan-500 text-xs"
-                >
-                  <option value="BPP">BPP - Bahan Pokok Penjualan (Food &amp; Beverage / Dapur / Bar)</option>
-                  <option value="NON_BPP">NON BPP - Perlengkapan Operasional / Cleaning / AV / MEP / ATK</option>
-                </select>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Klasifikasi ini menentukan apakah item muncul saat memilih COA BPP atau Non-BPP di PR baru.
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="block text-slate-300 font-semibold">
+                    Sambungan COA Resmi GMCC * <span className="text-cyan-400 font-normal">(Pilih 1, 2, atau beberapa COA)</span>
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setItemFormError(null);
+                        setEditItemCoaNames(allAvailableCoas.map(c => c.name));
+                      }}
+                      className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-[10px] font-semibold"
+                    >
+                      Pilih Semua ({allAvailableCoas.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditItemCoaNames([allAvailableCoas[0]?.name || 'BPP'])}
+                      className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[10px] font-semibold"
+                    >
+                      Reset 1 COA
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 max-h-48 overflow-y-auto">
+                  {allAvailableCoas.map((coaObj) => {
+                    const checked = editItemCoaNames.some(c => c.toLowerCase() === coaObj.name.toLowerCase());
+                    return (
+                      <label
+                        key={coaObj.id}
+                        className={`flex items-start gap-2.5 p-2 rounded-lg border cursor-pointer transition-colors ${
+                          checked
+                            ? 'bg-cyan-500/15 border-cyan-500/50 text-white'
+                            : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            setItemFormError(null);
+                            setEditItemCoaNames(prev => toggleCoaInList(prev, coaObj.name));
+                          }}
+                          className="mt-0.5 rounded border-slate-600 bg-slate-800 text-cyan-500 focus:ring-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="font-bold text-xs text-white truncate">{coaObj.name}</span>
+                            <span className="font-mono text-[9px] text-cyan-400 shrink-0">{coaObj.code}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate">
+                            {coaObj.glAccountCode} · {coaObj.category}
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                <p className="text-[10px] text-slate-400">
+                  Terhubung ({editItemCoaNames.length} COA): <b className="text-cyan-300">{editItemCoaNames.length > 0 ? editItemCoaNames.join(', ') : 'Belum ada COA dipilih'}</b>
                 </p>
+                {itemFormError && (
+                  <p className="text-[11px] text-rose-400 font-semibold">{itemFormError}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
