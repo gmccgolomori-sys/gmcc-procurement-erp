@@ -658,6 +658,10 @@ export interface PettyCashBillingFile {
   disbursementBank?: string;
   disbursementDate?: string;
   disbursementRef?: string;
+  disbursementProofImage?: string; // Foto / PDF Bukti Transfer (TF)
+  disbursementProofFileName?: string; // Nama file bukti transfer
+  paidConfirmedAt?: string; // Waktu konfirmasi terbayarkan
+  paidConfirmedBy?: string; // Nama user yang menandai terbayarkan
   notes?: string;
 }
 

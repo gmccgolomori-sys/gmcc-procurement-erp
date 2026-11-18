@@ -228,7 +228,7 @@ export const serializePettyCash = (periods: PettyCashSettlementPeriod[]): any[][
 export const serializeBillingFiles = (files: PettyCashBillingFile[]): any[][] => {
   const headers = [
     'ID Berkas', 'No Berkas Tagihan', 'No. Invoice ITDC', 'Nama Periode', 'Tanggal Mulai', 'Tanggal Selesai',
-    'Kategori COA', 'Total Nominal (IDR)', 'Status Penagihan', 'Metode Bayar', 'No Referensi Bayar'
+    'Kategori COA', 'Total Nominal (IDR)', 'Status Penagihan', 'Metode Bayar', 'Tanggal Cair', 'No Referensi Bayar', 'Status Bukti TF'
   ];
   const rows = files.map(f => [
     f.id,
@@ -241,7 +241,9 @@ export const serializeBillingFiles = (files: PettyCashBillingFile[]): any[][] =>
     f.totalAmount || 0,
     f.billingStatus,
     f.disbursementBank || '',
-    f.disbursementRef || ''
+    f.disbursementDate || '',
+    f.disbursementRef || '',
+    f.disbursementProofImage ? `Terlampir (${f.disbursementProofFileName || 'Bukti TF'})` : 'Belum Ada'
   ]);
   return [headers, ...rows];
 };
