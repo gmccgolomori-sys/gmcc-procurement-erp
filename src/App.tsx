@@ -107,23 +107,42 @@ export default function App() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => getStoredAuditLogs());
   const [githubConfig, setGithubConfig] = useState<GitHubSyncConfig>(() => getStoredGitHubConfig());
 
-  // Current User with auto-fallback to default Admin to prevent blank/locked state after cache clear
+  const isEmbeddedStudioPreview = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const host = (window.location.hostname || '').toLowerCase();
+    if (host.includes('github.io')) return false;
+    try {
+      return window.self !== window.top && (host.includes('run.app') || host === 'localhost' || host === '127.0.0.1');
+    } catch {
+      return host.includes('run.app') || host === 'localhost' || host === '127.0.0.1';
+    }
+  };
+
+  // Current User: fallback to Admin only in AI Studio right-hand preview; web requires explicit login
   const [currentUser, setCurrentUser] = useState<UserAccount>(() => {
     const saved = getStoredAuthUser();
     if (saved && users.some(u => u.id === saved.id)) return saved;
     const defaultUser = users.find(u => u.username === 'admin') || users[0] || getStoredUsers()[0];
-    saveStoredAuthUser(defaultUser);
+    if (isEmbeddedStudioPreview()) {
+      saveStoredAuthUser(defaultUser);
+    }
     return defaultUser;
   });
 
-  // Track explicit logout so refreshing while logged out stays on LoginScreen
+  // Right-hand AI Studio preview enters directly (unless user clicked Log Out); Web always requires login first
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
       if (typeof window !== 'undefined' && window.localStorage.getItem('gmcc_erp_logged_out') === 'true') {
         return false;
       }
-    } catch {}
-    return true;
+      if (isEmbeddedStudioPreview()) {
+        return true;
+      }
+      const saved = getStoredAuthUser();
+      return Boolean(saved && users.some(u => u.id === saved.id));
+    } catch {
+      return false;
+    }
   });
 
   // Active navigation tab
