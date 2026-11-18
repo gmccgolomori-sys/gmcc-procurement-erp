@@ -18,7 +18,8 @@ import {
   KeyRound,
   FileCheck2,
   TrendingUp,
-  FileSpreadsheet
+  FileSpreadsheet,
+  BookOpen
 } from 'lucide-react';
 
 export type ActiveTab = 
@@ -37,6 +38,7 @@ export type ActiveTab =
   | 'recipe-cost'
   | 'google-sheets'
   | 'master-data' 
+  | 'training-manual'
   | 'admin'
   | 'github';
 
@@ -156,6 +158,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: currentUserRole === 'REQUESTOR' ? 'Katalog & Spesifikasi' : 'Master Data', 
       icon: <Database className="w-4 h-4 text-cyan-400" /> 
     }] : []),
+    // Modul Panduan & Training Aplikasi (Terbuka untuk seluruh role)
+    {
+      id: 'training-manual' as ActiveTab,
+      label: 'Manual & Training App',
+      icon: <BookOpen className="w-4 h-4 text-cyan-400" />
+    },
     // System admin only visible to ADMIN and GM
     ...(isAdminOrGm ? [{
       id: 'admin' as ActiveTab, 

@@ -73,6 +73,7 @@ import { SpendingAnalyticsView } from './modules/SpendingAnalyticsView';
 import { GoogleSheetsSyncView } from './modules/GoogleSheetsSyncView';
 import { MasterDataView } from './modules/MasterDataView';
 import { AdminView } from './modules/AdminView';
+import { TrainingManualView } from './modules/TrainingManualView';
 import { GitHubRightDrawer } from './components/GitHubRightDrawer';
 import { 
   LayoutDashboard, 
@@ -1024,6 +1025,13 @@ export default function App() {
                 setGrns(updated);
                 saveStoredGRNs(updated);
               }}
+            />
+          )}
+
+          {activeTab === 'training-manual' && (
+            <TrainingManualView
+              currentUser={currentUser}
+              onNavigate={(tab) => setActiveTab(tab as ActiveTab)}
             />
           )}
 

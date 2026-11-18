@@ -28,7 +28,8 @@ import {
   ShieldCheck,
   Scale,
   TrendingUp,
-  FileSpreadsheet
+  FileSpreadsheet,
+  BookOpen
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -328,6 +329,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               { id: 'recipe-cost', label: 'Recipe Cost Center', icon: <ChefHat className="w-4 h-4 text-cyan-400" /> },
               { id: 'google-sheets', label: 'Google Sheets Database (2-Way)', icon: <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> },
               { id: 'master-data', label: 'Katalog Barang & Master Data', icon: <Database className="w-4 h-4 text-cyan-400" /> },
+              { id: 'training-manual', label: 'Manual & Training App', icon: <BookOpen className="w-4 h-4 text-cyan-400" /> },
               { id: 'admin', label: 'System Admin & User', icon: <Settings className="w-4 h-4 text-cyan-400" /> },
             ].map(m => (
               <button
