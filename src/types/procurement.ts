@@ -246,72 +246,67 @@ export const filterItemsByCoa = (
   if (!coaName) return items;
   const name = coaName.toUpperCase().trim();
 
-  const itemHasExplicitCoa = (it: MasterItem, targetUpper: string): boolean => {
-    if (!it.coaNames || it.coaNames.length === 0) return false;
-    return it.coaNames.some(c => {
-      const cu = (c || '').toUpperCase().trim();
-      return cu === targetUpper || (targetUpper.includes('EVENT') && cu.includes('EVENT'));
-    });
-  };
+  const getUpperCoas = (it: MasterItem): string[] =>
+    getItemLinkedCoas(it).map(c => c.toUpperCase().trim());
+
+  const itemHasCoa = (it: MasterItem, targetUpper: string): boolean =>
+    getUpperCoas(it).some(cu => cu === targetUpper || (targetUpper.includes('EVENT') && cu.includes('EVENT')));
 
   // Aturan 4: Meal Employee -> Mengambil data BPP, Non-BPP, serta item yang terhubung ke Meal Employee
   if (name.includes('MEAL') || name.includes('DUTY MEAL') || name.includes('KARYAWAN')) {
     return items.filter(it => {
-      if (itemHasExplicitCoa(it, name)) return true;
-      if (!it.coaNames || it.coaNames.length === 0) return true;
-      return it.coaNames.some(c => {
-        const cu = c.toUpperCase().trim();
-        return cu === 'BPP' || cu === 'NON BPP' || cu.includes('MEAL');
-      });
+      const upperCoas = getUpperCoas(it);
+      return upperCoas.some(cu => cu === 'BPP' || cu === 'NON BPP' || cu.includes('MEAL'));
     });
   }
 
-  // Aturan 2: Event BPP -> Item BPP + Item yang explicitly dihubungkan ke Event Cost (kecuali item non-BPP yang tidak terhubung Event)
+  // Aturan 2: Event BPP -> Item BPP + Item yang dihubungkan ke Event Cost
   const isExplicitEventBpp = name.includes('EVENT') && name.includes('BPP') && !name.includes('NON');
   const isEventWithBppOutlet = isEventCoa(name) && (outletDestination === 'NUKA' || outletDestination === 'MICE');
   if (isExplicitEventBpp || isEventWithBppOutlet) {
-    return items.filter(it =>
-      itemHasExplicitCoa(it, name) ||
-      itemHasExplicitCoa(it, 'EVENT COST') ||
-      getItemCoaCategory(it) === 'BPP'
-    );
-  }
-
-  // Aturan 3: Non BPP Event -> Item Non-BPP + Item yang explicitly dihubungkan ke Event Cost
-  const isExplicitNonBppEvent = name.includes('EVENT') && name.includes('NON');
-  const isEventWithNonBppOutlet = isEventCoa(name) && outletDestination === 'NONE';
-  if (isExplicitNonBppEvent || isEventWithNonBppOutlet) {
-    return items.filter(it =>
-      itemHasExplicitCoa(it, name) ||
-      itemHasExplicitCoa(it, 'EVENT COST') ||
-      getItemCoaCategory(it) === 'NON_BPP'
-    );
-  }
-
-  // Aturan 1: COA BPP murni -> Item yang terhubung BPP atau berkategori BPP
-  if (name === 'BPP' || (name.includes('BPP') && !name.includes('NON'))) {
     return items.filter(it => {
-      if (it.coaNames && it.coaNames.length > 0) {
-        return itemHasExplicitCoa(it, 'BPP') || itemHasExplicitCoa(it, name);
-      }
-      return getItemCoaCategory(it) === 'BPP';
+      const upperCoas = getUpperCoas(it);
+      return upperCoas.includes('BPP') || upperCoas.some(cu => cu.includes('EVENT')) || itemHasCoa(it, name);
     });
   }
 
-  // Aturan 5: COA Non-BPP, Transport, Rental, atau Custom COA
-  const isStandardNonBppFamily =
-    name === 'NON BPP' ||
-    name.includes('NON') ||
-    name.includes('TRANSPORT') ||
-    name.includes('RENTAL') ||
-    name.includes('ENGINEERING');
+  // Aturan 3: Non BPP Event -> Item Non-BPP + Item yang dihubungkan ke Event Cost
+  const isExplicitNonBppEvent = name.includes('EVENT') && name.includes('NON');
+  const isEventWithNonBppOutlet = isEventCoa(name) && outletDestination === 'NONE';
+  if (isExplicitNonBppEvent || isEventWithNonBppOutlet) {
+    return items.filter(it => {
+      const upperCoas = getUpperCoas(it);
+      return upperCoas.includes('NON BPP') || upperCoas.some(cu => cu.includes('EVENT')) || itemHasCoa(it, name);
+    });
+  }
 
-  return items.filter(it => {
-    if (it.coaNames && it.coaNames.length > 0) {
-      return itemHasExplicitCoa(it, name);
+  // Aturan 1: COA BPP murni -> Hanya item yang terhubung ke BPP
+  if (name === 'BPP' || (name.includes('BPP') && !name.includes('NON'))) {
+    return items.filter(it => {
+      const upperCoas = getUpperCoas(it);
+      return upperCoas.includes('BPP') || upperCoas.includes(name);
+    });
+  }
+
+  // Aturan 5a: COA NON BPP -> Item yang terhubung ke NON BPP
+  if (name === 'NON BPP' || name === 'COA-NONBPP' || name === 'NON-BPP') {
+    return items.filter(it => {
+      const upperCoas = getUpperCoas(it);
+      return upperCoas.includes('NON BPP') || upperCoas.includes(name);
+    });
+  }
+
+  // Aturan 5b: Transport / Rental Equipment Event -> Jika sudah ada item yang dihubungkan khusus ke COA ini, tampilkan hanya item tersebut; jika belum ada sama sekali, fallback ke item NON BPP
+  if (name.includes('TRANSPORT') || name.includes('RENTAL')) {
+    const explicitMatches = items.filter(it => itemHasCoa(it, name));
+    if (explicitMatches.length > 0) {
+      return explicitMatches;
     }
-    return isStandardNonBppFamily ? getItemCoaCategory(it) === 'NON_BPP' : true;
-  });
+    return items.filter(it => getUpperCoas(it).includes('NON BPP'));
+  }
+
+  // Aturan 6: COA khusus / custom (misal: Perjalanan Dinas, ATK, dll.) -> Hanya item yang dihubungkan ke COA tersebut
+  return items.filter(it => itemHasCoa(it, name));
 };
 
 export interface PRItemLine {

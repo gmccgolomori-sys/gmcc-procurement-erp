@@ -12,7 +12,7 @@ import {
   isEventCoa,
   OutletDestination,
   filterItemsByCoa,
-  getItemCoaCategory,
+  getItemLinkedCoas,
   MAX_PR_LIMIT
 } from '../types/procurement';
 import { 
@@ -141,7 +141,7 @@ export const RequisitionCreateView: React.FC<RequisitionCreateViewProps> = ({
     const isBpp = isStrictBppCoa(nextCoaName, cObj?.code);
     const isEvt = isEventCoa(nextCoaName, cObj?.code);
     const nextFiltered = filterItemsByCoa(items, nextCoaName, nextOutlet);
-    const fallbackItem = nextFiltered[0] || items[0];
+    const fallbackItem = nextFiltered[0];
 
     setItemLines(prev => prev.map(l => {
       const stillValid = nextFiltered.some(it => it.id === l.itemId);
@@ -152,15 +152,26 @@ export const RequisitionCreateView: React.FC<RequisitionCreateViewProps> = ({
         coaId: cObj?.id,
         outletDestination: (isBpp || isEvt) ? nextOutlet : undefined
       };
-      if (!stillValid && fallbackItem) {
+      if (!stillValid) {
+        if (fallbackItem) {
+          return {
+            ...baseLine,
+            itemId: fallbackItem.id,
+            itemName: fallbackItem.name,
+            specification: fallbackItem.specification || '',
+            unit: fallbackItem.unit,
+            estimatedPrice: fallbackItem.lastPurchasePrice,
+            totalEstimated: l.quantityRequested * fallbackItem.lastPurchasePrice
+          };
+        }
         return {
           ...baseLine,
-          itemId: fallbackItem.id,
-          itemName: fallbackItem.name,
-          specification: fallbackItem.specification || '',
-          unit: fallbackItem.unit,
-          estimatedPrice: fallbackItem.lastPurchasePrice,
-          totalEstimated: l.quantityRequested * fallbackItem.lastPurchasePrice
+          itemId: '',
+          itemName: '',
+          specification: '',
+          unit: 'PCS',
+          estimatedPrice: 0,
+          totalEstimated: 0
         };
       }
       return baseLine;
@@ -168,7 +179,7 @@ export const RequisitionCreateView: React.FC<RequisitionCreateViewProps> = ({
   };
 
   const handleAddItemLine = () => {
-    const defaultItem = availableCatalogItems[0] || items[0];
+    const defaultItem = availableCatalogItems[0];
     const coaObj = coas.find(c => c.name === selectedCoaName) || defaultCoaObj;
     const newLine: PRItemLine = {
       id: `line-${Date.now()}-${itemLines.length + 1}`,
@@ -242,8 +253,8 @@ export const RequisitionCreateView: React.FC<RequisitionCreateViewProps> = ({
       setError('Mohon tuliskan tujuan / peruntukan pengajuan barang ini.');
       return;
     }
-    if (itemLines.length === 0) {
-      setError('Mohon tambahkan minimal 1 barang pesanan.');
+    if (itemLines.length === 0 || itemLines.some(l => !l.itemId || !l.itemName.trim())) {
+      setError(`Mohon pilih minimal 1 item barang yang sudah terhubung ke COA "${selectedCoaName}". Jika daftar kosong, hubungkan item melalui Master Data -> Katalog Barang.`);
       return;
     }
     if (subtotalEstimated > MAX_PR_LIMIT) {
@@ -702,14 +713,19 @@ export const RequisitionCreateView: React.FC<RequisitionCreateViewProps> = ({
                         onChange={(e) => handleUpdateItemLine(line.id, 'itemId', e.target.value)}
                         className="w-full px-2 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white font-medium focus:outline-none focus:border-cyan-500 text-xs"
                       >
-                        {!availableCatalogItems.some((it) => it.id === line.itemId) && line.itemId && (
+                        {availableCatalogItems.length === 0 && (
+                          <option value="">
+                            -- Belum ada item terhubung ke COA {selectedCoaName} --
+                          </option>
+                        )}
+                        {availableCatalogItems.length > 0 && !availableCatalogItems.some((it) => it.id === line.itemId) && line.itemId && (
                           <option value={line.itemId}>
                             {line.itemName} (Item Terpilih)
                           </option>
                         )}
                         {availableCatalogItems.map((it) => (
                           <option key={it.id} value={it.id}>
-                            [{getItemCoaCategory(it)}] {it.name}
+                            [{getItemLinkedCoas(it).join(', ')}] {it.name}
                           </option>
                         ))}
                       </select>
